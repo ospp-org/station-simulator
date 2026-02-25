@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Scenarios\StepTypes;
 
 use App\Scenarios\ScenarioContext;
-use OneStopPay\OsppProtocol\Enums\BayStatus;
+use Ospp\Protocol\Enums\BayStatus;
 
 final class FaultStep implements StepInterface
 {

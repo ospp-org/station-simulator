@@ -19,7 +19,7 @@ steps:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
-      stationVendor: "OneStopPay"
+      stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
       bayCount: 4
       bootReason: "power_on"

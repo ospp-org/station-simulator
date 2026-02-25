@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "aa9528570974a5390060086cc8523348",
+    "content-hash": "e5d7bb40e5cf04d30be304c05e2bd9e1",
     "packages": [
         {
             "name": "brick/math",
@@ -2828,12 +2828,12 @@
             "time": "2026-02-16T23:10:27+00:00"
         },
         {
-            "name": "onestoppay/ospp-sdk-php",
+            "name": "ospp/protocol",
             "version": "dev-main",
             "dist": {
                 "type": "path",
                 "url": "../ospp-sdk-php",
-                "reference": "f087af21b25ef1779030fc5a1ed0e23d410504c2"
+                "reference": "896a883cbedc29b36d459b86aa909ca22698c04f"
             },
             "require": {
                 "ext-json": "*",
@@ -2850,12 +2850,12 @@
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "OneStopPay\\OsppProtocol\\": "src/"
+                    "Ospp\\Protocol\\": "src/"
                 }
             },
             "autoload-dev": {
                 "psr-4": {
-                    "OneStopPay\\OsppProtocol\\Tests\\": "tests/"
+                    "Ospp\\Protocol\\Tests\\": "tests/"
                 }
             },
             "license": [
@@ -8129,7 +8129,7 @@
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
-        "onestoppay/ospp-sdk-php": 20
+        "ospp/protocol": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

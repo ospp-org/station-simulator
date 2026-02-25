@@ -9,7 +9,7 @@ use App\Mqtt\MessageSender;
 use App\Mqtt\MqttConnectionManager;
 use App\Station\SimulatedStation;
 use App\Timers\TimerManager;
-use OneStopPay\OsppProtocol\Envelope\MessageEnvelope;
+use Ospp\Protocol\Envelope\MessageEnvelope;
 
 final class ScenarioContext
 {

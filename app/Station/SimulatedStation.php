@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Station;
 
-use OneStopPay\OsppProtocol\Enums\BayStatus;
+use Ospp\Protocol\Enums\BayStatus;
 
 final class SimulatedStation
 {

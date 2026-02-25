@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Logging;
 
-use OneStopPay\OsppProtocol\Envelope\MessageEnvelope;
+use Ospp\Protocol\Envelope\MessageEnvelope;
 
 final class MessageLogger
 {

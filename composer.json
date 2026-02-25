@@ -1,12 +1,12 @@
 {
-    "name": "onestoppay/station-simulator",
+    "name": "ospp/station-simulator",
     "description": "OSPP Station Simulator — simulates 1-N self-service stations via MQTT for UAT/load testing",
     "type": "project",
     "license": "MIT",
     "require": {
         "php": "^8.3",
         "laravel-zero/framework": "^11.0",
-        "onestoppay/ospp-sdk-php": "dev-main",
+        "ospp/protocol": "dev-main",
         "php-mqtt/client": "^2.1",
         "react/event-loop": "^1.5",
         "react/socket": "^1.15",

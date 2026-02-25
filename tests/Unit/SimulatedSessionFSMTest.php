@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\StateMachines\SimulatedSessionFSM;
-use OneStopPay\OsppProtocol\Enums\SessionStatus;
+use Ospp\Protocol\Enums\SessionStatus;
 use PHPUnit\Framework\TestCase;
 
 final class SimulatedSessionFSMTest extends TestCase

@@ -6,8 +6,8 @@ namespace App\Handlers;
 
 use App\Logging\ColoredConsoleOutput;
 use App\Station\SimulatedStation;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
-use OneStopPay\OsppProtocol\Envelope\MessageEnvelope;
+use Ospp\Protocol\Actions\OsppAction;
+use Ospp\Protocol\Envelope\MessageEnvelope;
 
 final class IncomingCommandRouter
 {

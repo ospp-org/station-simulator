@@ -18,7 +18,7 @@ Simulates 1–N OSPP (Open Self-Service Point Protocol) stations connecting via 
 - PHP 8.3+
 - Composer
 - MQTT broker (EMQX recommended)
-- `onestoppay/ospp-sdk-php` ^0.1
+- `ospp/protocol` ^0.1
 
 ## Quick Start
 

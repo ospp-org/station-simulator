@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Generators;
 
-use OneStopPay\OsppProtocol\Crypto\CanonicalJsonSerializer;
-use OneStopPay\OsppProtocol\Crypto\EcdsaService;
+use Ospp\Protocol\Crypto\CanonicalJsonSerializer;
+use Ospp\Protocol\Crypto\EcdsaService;
 
 final class ReceiptGenerator
 {

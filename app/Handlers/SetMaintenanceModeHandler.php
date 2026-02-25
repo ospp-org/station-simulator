@@ -11,9 +11,9 @@ use App\AutoResponder\ResponseDecision;
 use App\Logging\ColoredConsoleOutput;
 use App\Mqtt\MessageSender;
 use App\Station\SimulatedStation;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
-use OneStopPay\OsppProtocol\Enums\BayStatus;
-use OneStopPay\OsppProtocol\Envelope\MessageEnvelope;
+use Ospp\Protocol\Actions\OsppAction;
+use Ospp\Protocol\Enums\BayStatus;
+use Ospp\Protocol\Envelope\MessageEnvelope;
 
 final class SetMaintenanceModeHandler
 {

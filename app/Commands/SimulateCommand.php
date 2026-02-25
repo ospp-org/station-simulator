@@ -44,9 +44,9 @@ use App\Station\StationConfig;
 use App\Station\StationState;
 use App\Timers\TimerManager;
 use LaravelZero\Framework\Commands\Command;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
-use OneStopPay\OsppProtocol\Enums\BayStatus;
-use OneStopPay\OsppProtocol\Enums\MessageType;
+use Ospp\Protocol\Actions\OsppAction;
+use Ospp\Protocol\Enums\BayStatus;
+use Ospp\Protocol\Enums\MessageType;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 

@@ -48,7 +48,7 @@ final class BootPayloadGeneratorTest extends TestCase
         $this->assertSame('SIM-001', $payload['stationId']);
         $this->assertSame('1.2.0', $payload['firmwareVersion']);
         $this->assertSame('OSP-4000', $payload['stationModel']);
-        $this->assertSame('OneStopPay', $payload['stationVendor']);
+        $this->assertSame('AcmeCorp', $payload['stationVendor']);
         $this->assertSame('SN-001', $payload['serialNumber']);
     }
 
@@ -156,7 +156,7 @@ final class BootPayloadGeneratorTest extends TestCase
             'identity' => [
                 'station_id_prefix' => 'SIM',
                 'station_model' => 'OSP-4000',
-                'station_vendor' => 'OneStopPay',
+                'station_vendor' => 'AcmeCorp',
                 'serial_number_prefix' => 'SN',
                 'firmware_version' => '1.2.0',
             ],
@@ -172,7 +172,7 @@ final class BootPayloadGeneratorTest extends TestCase
             'meter_values' => ['interval_seconds' => 10, 'jitter_percent' => 15, 'profiles' => []],
             'offline' => ['pass_generation' => ['algorithm' => 'ECDSA-P256-SHA256']],
         ]);
-        $identity = new StationIdentity('SIM-001', 'OSP-4000', 'OneStopPay', 'SN-001', '1.2.0');
+        $identity = new StationIdentity('SIM-001', 'OSP-4000', 'AcmeCorp', 'SN-001', '1.2.0');
 
         return new SimulatedStation($identity, $config);
     }

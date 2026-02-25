@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\StateMachines;
 
-use OneStopPay\OsppProtocol\Enums\SessionStatus;
-use OneStopPay\OsppProtocol\StateMachines\SessionTransitions;
+use Ospp\Protocol\Enums\SessionStatus;
+use Ospp\Protocol\StateMachines\SessionTransitions;
 
 final class SimulatedSessionFSM
 {

@@ -15,9 +15,9 @@ use App\Station\BootReason;
 use App\Station\SimulatedStation;
 use App\Station\StationState;
 use App\Timers\TimerManager;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
-use OneStopPay\OsppProtocol\Enums\BayStatus;
-use OneStopPay\OsppProtocol\Envelope\MessageEnvelope;
+use Ospp\Protocol\Actions\OsppAction;
+use Ospp\Protocol\Enums\BayStatus;
+use Ospp\Protocol\Envelope\MessageEnvelope;
 
 final class ResetHandler
 {

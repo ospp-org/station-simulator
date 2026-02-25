@@ -11,9 +11,9 @@ use App\Mqtt\MessageSender;
 use App\StateMachines\SimulatedBayFSM;
 use App\Station\SimulatedStation;
 use App\Timers\TimerManager;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
-use OneStopPay\OsppProtocol\Enums\BayStatus;
-use OneStopPay\OsppProtocol\Envelope\MessageEnvelope;
+use Ospp\Protocol\Actions\OsppAction;
+use Ospp\Protocol\Enums\BayStatus;
+use Ospp\Protocol\Envelope\MessageEnvelope;
 
 final class CancelReservationHandler
 {

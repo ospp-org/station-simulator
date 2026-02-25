@@ -14,10 +14,10 @@ use App\StateMachines\SimulatedBayFSM;
 use App\StateMachines\SimulatedSessionFSM;
 use App\Station\SimulatedStation;
 use App\Timers\TimerManager;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
-use OneStopPay\OsppProtocol\Enums\BayStatus;
-use OneStopPay\OsppProtocol\Enums\SessionStatus;
-use OneStopPay\OsppProtocol\Envelope\MessageEnvelope;
+use Ospp\Protocol\Actions\OsppAction;
+use Ospp\Protocol\Enums\BayStatus;
+use Ospp\Protocol\Enums\SessionStatus;
+use Ospp\Protocol\Envelope\MessageEnvelope;
 
 final class StopServiceHandler
 {

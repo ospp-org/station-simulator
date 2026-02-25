@@ -15,9 +15,10 @@ use App\StateMachines\SimulatedBayFSM;
 use App\StateMachines\SimulatedSessionFSM;
 use App\Station\SimulatedStation;
 use App\Timers\TimerManager;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
-use OneStopPay\OsppProtocol\Enums\BayStatus;
-use OneStopPay\OsppProtocol\Envelope\MessageEnvelope;
+use Ospp\Protocol\Actions\OsppAction;
+use Ospp\Protocol\Enums\BayStatus;
+use Ospp\Protocol\Enums\SessionStatus;
+use Ospp\Protocol\Envelope\MessageEnvelope;
 
 final class StartServiceHandler
 {
@@ -105,8 +106,8 @@ final class StartServiceHandler
             $this->bayFSM->transition($station, $bay, BayStatus::OCCUPIED);
             $bay->startSession($sessionId, $serviceId);
             $this->sessionFSM->startSession($bayId);
-            $this->sessionFSM->transition($bayId, \OneStopPay\OsppProtocol\Enums\SessionStatus::AUTHORIZED);
-            $this->sessionFSM->transition($bayId, \OneStopPay\OsppProtocol\Enums\SessionStatus::ACTIVE);
+            $this->sessionFSM->transition($bayId, SessionStatus::AUTHORIZED);
+            $this->sessionFSM->transition($bayId, SessionStatus::ACTIVE);
 
             $this->output->session("Session {$sessionId} started on bay {$bayId} (service: {$serviceId})");
 

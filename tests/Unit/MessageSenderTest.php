@@ -13,12 +13,12 @@ use App\Station\StationIdentity;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Mockery\MockInterface;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
-use OneStopPay\OsppProtocol\Enums\MessageType;
-use OneStopPay\OsppProtocol\Enums\SigningMode;
-use OneStopPay\OsppProtocol\Envelope\MessageEnvelope;
-use OneStopPay\OsppProtocol\ValueObjects\MessageId;
-use OneStopPay\OsppProtocol\ValueObjects\ProtocolVersion;
+use Ospp\Protocol\Actions\OsppAction;
+use Ospp\Protocol\Enums\MessageType;
+use Ospp\Protocol\Enums\SigningMode;
+use Ospp\Protocol\Envelope\MessageEnvelope;
+use Ospp\Protocol\ValueObjects\MessageId;
+use Ospp\Protocol\ValueObjects\ProtocolVersion;
 use PHPUnit\Framework\TestCase;
 
 final class MessageSenderTest extends TestCase
@@ -203,7 +203,7 @@ final class MessageSenderTest extends TestCase
             'identity' => [
                 'station_id_prefix' => 'SIM',
                 'station_model' => 'OSP-4000',
-                'station_vendor' => 'OneStopPay',
+                'station_vendor' => 'AcmeCorp',
                 'serial_number_prefix' => 'SN',
                 'firmware_version' => '1.2.0',
             ],
@@ -216,7 +216,7 @@ final class MessageSenderTest extends TestCase
             'meter_values' => ['interval_seconds' => 10, 'jitter_percent' => 15, 'profiles' => []],
             'offline' => ['pass_generation' => ['algorithm' => 'ECDSA-P256-SHA256']],
         ]);
-        $identity = new StationIdentity('SIM-001', 'OSP-4000', 'OneStopPay', 'SN-001', '1.2.0');
+        $identity = new StationIdentity('SIM-001', 'OSP-4000', 'AcmeCorp', 'SN-001', '1.2.0');
 
         return new SimulatedStation($identity, $config);
     }

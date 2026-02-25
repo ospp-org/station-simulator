@@ -8,9 +8,9 @@ use App\Logging\ColoredConsoleOutput;
 use App\Mqtt\MessageSender;
 use App\Station\SimulatedStation;
 use App\Timers\TimerManager;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
-use OneStopPay\OsppProtocol\Enums\DiagnosticsStatus;
-use OneStopPay\OsppProtocol\StateMachines\DiagnosticsTransitions;
+use Ospp\Protocol\Actions\OsppAction;
+use Ospp\Protocol\Enums\DiagnosticsStatus;
+use Ospp\Protocol\StateMachines\DiagnosticsTransitions;
 
 final class SimulatedDiagnosticsFSM
 {

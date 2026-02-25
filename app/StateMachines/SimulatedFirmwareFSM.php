@@ -8,9 +8,9 @@ use App\Logging\ColoredConsoleOutput;
 use App\Mqtt\MessageSender;
 use App\Station\SimulatedStation;
 use App\Timers\TimerManager;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
-use OneStopPay\OsppProtocol\Enums\FirmwareUpdateStatus;
-use OneStopPay\OsppProtocol\StateMachines\FirmwareTransitions;
+use Ospp\Protocol\Actions\OsppAction;
+use Ospp\Protocol\Enums\FirmwareUpdateStatus;
+use Ospp\Protocol\StateMachines\FirmwareTransitions;
 
 final class SimulatedFirmwareFSM
 {

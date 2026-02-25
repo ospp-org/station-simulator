@@ -6,7 +6,7 @@ namespace App\Generators;
 
 use App\Station\BootReason;
 use App\Station\SimulatedStation;
-use OneStopPay\OsppProtocol\Enums\BayStatus;
+use Ospp\Protocol\Enums\BayStatus;
 
 final class BootPayloadGenerator
 {

@@ -7,7 +7,7 @@ namespace App\Api\Controllers;
 use App\Api\HttpServer;
 use App\Mqtt\MessageSender;
 use App\Station\SimulatedStation;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
+use Ospp\Protocol\Actions\OsppAction;
 use Psr\Http\Message\ServerRequestInterface;
 
 final class SecurityController

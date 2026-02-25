@@ -6,7 +6,7 @@ namespace App\Security;
 
 use App\Mqtt\MessageSender;
 use App\Station\SimulatedStation;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
+use Ospp\Protocol\Actions\OsppAction;
 
 final class SecurityEventSender
 {

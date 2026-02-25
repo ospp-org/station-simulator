@@ -21,7 +21,7 @@ final class MeterValueGeneratorTest extends TestCase
             'identity' => [
                 'station_id_prefix' => 'SIM',
                 'station_model' => 'OSP-4000',
-                'station_vendor' => 'OneStopPay',
+                'station_vendor' => 'AcmeCorp',
                 'serial_number_prefix' => 'SN',
                 'firmware_version' => '1.2.0',
             ],

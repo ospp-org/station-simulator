@@ -7,12 +7,12 @@ namespace App\Mqtt;
 use App\Logging\ColoredConsoleOutput;
 use App\Logging\MessageLogger;
 use App\Station\SimulatedStation;
-use OneStopPay\OsppProtocol\Crypto\CanonicalJsonSerializer;
-use OneStopPay\OsppProtocol\Crypto\MacSigner;
-use OneStopPay\OsppProtocol\Enums\MessageType;
-use OneStopPay\OsppProtocol\Envelope\MessageEnvelope;
-use OneStopPay\OsppProtocol\ValueObjects\MessageId;
-use OneStopPay\OsppProtocol\ValueObjects\ProtocolVersion;
+use Ospp\Protocol\Crypto\CanonicalJsonSerializer;
+use Ospp\Protocol\Crypto\MacSigner;
+use Ospp\Protocol\Enums\MessageType;
+use Ospp\Protocol\Envelope\MessageEnvelope;
+use Ospp\Protocol\ValueObjects\MessageId;
+use Ospp\Protocol\ValueObjects\ProtocolVersion;
 
 final class MessageReceiver
 {

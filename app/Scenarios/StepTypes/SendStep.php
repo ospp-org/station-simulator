@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Scenarios\StepTypes;
 
 use App\Scenarios\ScenarioContext;
-use OneStopPay\OsppProtocol\Actions\OsppAction;
+use Ospp\Protocol\Actions\OsppAction;
 
 final class SendStep implements StepInterface
 {

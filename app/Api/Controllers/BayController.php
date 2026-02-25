@@ -6,7 +6,7 @@ namespace App\Api\Controllers;
 
 use App\Api\HttpServer;
 use App\Station\SimulatedStation;
-use OneStopPay\OsppProtocol\Enums\BayStatus;
+use Ospp\Protocol\Enums\BayStatus;
 use Psr\Http\Message\ServerRequestInterface;
 
 final class BayController
