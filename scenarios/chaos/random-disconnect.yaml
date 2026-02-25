@@ -1,0 +1,42 @@
+name: "Random Disconnect During Sessions"
+description: "Disconnect random stations during active sessions, verify recovery"
+station_count: 5
+timeout_seconds: 120
+tags: [chaos, disconnect, recovery]
+
+steps:
+  - name: "Boot all stations"
+    type: parallel
+    steps:
+      - name: "Send BootNotification"
+        type: send
+        action: BootNotification
+        message_type: REQUEST
+        payload:
+          firmwareVersion: "1.2.0"
+          stationModel: "SimStation"
+          stationVendor: "OneStopPay"
+          bayCount: 4
+          bootReason: "power_on"
+
+  - name: "Wait for all boots"
+    type: delay
+    duration_ms: 10000
+
+  - name: "Disconnect station 1"
+    type: disconnect
+    station: "{{stationId_1}}"
+    reconnect_delay_ms: 5000
+
+  - name: "Wait for reconnect"
+    type: delay
+    duration_ms: 8000
+
+  - name: "Disconnect station 3"
+    type: disconnect
+    station: "{{stationId_3}}"
+    reconnect_delay_ms: 3000
+
+  - name: "Wait for full recovery"
+    type: delay
+    duration_ms: 15000

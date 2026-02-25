@@ -1,0 +1,147 @@
+identity:
+  station_id_prefix: "SIM"
+  station_model: "OSP-4000"
+  station_vendor: "OneStopPay"
+  serial_number_prefix: "SN"
+  firmware_version: "1.2.0"
+
+capabilities:
+  bay_count: 4
+  ble_supported: false
+  offline_mode_supported: true
+  meter_values_supported: true
+  device_management_supported: true
+
+network:
+  connection_type: "ethernet"  # ethernet|wifi|cellular
+  signal_strength: null         # dBm, null for ethernet
+
+timezone: "Europe/Bucharest"
+
+configuration:
+  HeartbeatIntervalSeconds: 30
+  MaxSessionDurationSeconds: 3600
+  MeterValueSampleInterval: 10
+  MaintenanceSchedule: ""
+  FirmwareAutoUpdate: true
+  OfflinePassMaxUses: 10
+  OfflinePassMaxCredits: 500
+
+services:
+  - service_id: "wash_basic"
+    service_name: "Basic Wash"
+    pricing_type: "fixed"
+    price_credits_fixed: 50
+    price_credits_per_minute: null
+    available: true
+
+  - service_id: "wash_premium"
+    service_name: "Premium Wash"
+    pricing_type: "fixed"
+    price_credits_fixed: 100
+    price_credits_per_minute: null
+    available: true
+
+  - service_id: "vacuum"
+    service_name: "Vacuum"
+    pricing_type: "per_minute"
+    price_credits_fixed: null
+    price_credits_per_minute: 5
+    available: true
+
+  - service_id: "air"
+    service_name: "Air"
+    pricing_type: "fixed"
+    price_credits_fixed: 10
+    price_credits_per_minute: null
+    available: true
+
+behavior:
+  start_service:
+    accept_rate: 0.95
+    response_delay_ms: [100, 500]
+    reject_error_code: 3001
+    reject_error_text: "Bay already in use"
+
+  stop_service:
+    accept_rate: 1.0
+    response_delay_ms: [50, 200]
+    already_ended_rate: 0.0
+    already_ended_error_code: 3006
+    already_ended_error_text: "No active session"
+
+  reserve_bay:
+    accept_rate: 0.90
+    response_delay_ms: [100, 300]
+    reject_error_code: 3010
+    reject_error_text: "Max duration exceeded"
+
+  cancel_reservation:
+    accept_rate: 1.0
+    response_delay_ms: [50, 150]
+
+  get_configuration:
+    response_delay_ms: [50, 100]
+    unknown_key_rate: 0.0
+
+  change_configuration:
+    accept_rate: 0.85
+    reboot_required_rate: 0.10
+    not_supported_rate: 0.05
+    response_delay_ms: [50, 150]
+
+  reset:
+    accept_rate: 1.0
+    response_delay_ms: [200, 1000]
+    reboot_duration_ms: [3000, 8000]
+
+  update_firmware:
+    accept_rate: 0.90
+    download_duration_ms: [5000, 15000]
+    install_duration_ms: [3000, 10000]
+    failure_rate: 0.05
+    failure_at_stage: null  # null|downloading|installing
+    progress_notification_interval_ms: 2000
+
+  get_diagnostics:
+    accept_rate: 0.95
+    collection_duration_ms: [2000, 5000]
+    upload_duration_ms: [1000, 3000]
+    failure_rate: 0.02
+
+  set_maintenance_mode:
+    accept_rate: 1.0
+    response_delay_ms: [100, 300]
+
+  update_service_catalog:
+    accept_rate: 1.0
+    response_delay_ms: [100, 300]
+
+meter_values:
+  interval_seconds: 10
+  jitter_percent: 15
+  profiles:
+    wash_basic:
+      water_ml_per_s: [150, 300]
+      chemical_ml_per_s: [10, 20]
+      energy_wh_per_s: [5, 15]
+    wash_premium:
+      water_ml_per_s: [200, 400]
+      chemical_ml_per_s: [20, 40]
+      energy_wh_per_s: [5, 15]
+    vacuum:
+      water_ml_per_s: [0, 0]
+      chemical_ml_per_s: [0, 0]
+      energy_wh_per_s: [80, 150]
+    air:
+      water_ml_per_s: [0, 0]
+      chemical_ml_per_s: [0, 0]
+      energy_wh_per_s: [30, 60]
+
+offline:
+  pass_generation:
+    algorithm: "ECDSA-P256-SHA256"
+  private_key_path: "keys/station.pem"
+  public_key_path: "keys/station_pub.pem"
+  tx_counter_start: 1
+  receipt_generation: true

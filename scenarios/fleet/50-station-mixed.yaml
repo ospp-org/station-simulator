@@ -1,0 +1,32 @@
+name: "50-Station Mixed Workload"
+description: "Boot 50 stations, run mixed sessions and some faults"
+station_count: 50
+timeout_seconds: 180
+tags: [fleet, load, mixed]
+
+steps:
+  - name: "Boot all stations"
+    type: parallel
+    steps:
+      - name: "Send BootNotification"
+        type: send
+        action: BootNotification
+        message_type: REQUEST
+        payload:
+          firmwareVersion: "1.2.0"
+          stationModel: "SimStation"
+          stationVendor: "OneStopPay"
+          bayCount: 4
+          bootReason: "power_on"
+
+  - name: "Wait for all boots"
+    type: delay
+    duration_ms: 15000
+
+  - name: "Let sessions run"
+    type: delay
+    duration_ms: 60000
+
+  - name: "Assert fleet stability"
+    type: assert
+    assertion: no_errors

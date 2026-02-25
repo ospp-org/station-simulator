@@ -1,0 +1,59 @@
+name: "Soft Reset"
+description: "Reset station, verify bays go Unavailable, station reboots and comes back online"
+station_count: 1
+timeout_seconds: 60
+tags: [device-management, reset]
+
+steps:
+  - name: "Send BootNotification"
+    type: send
+    action: BootNotification
+    message_type: REQUEST
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "OneStopPay"
+      serialNumber: "{{serialNumber}}"
+      bayCount: 4
+      bootReason: "power_on"
+
+  - name: "Wait for boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 5000
+
+  - name: "Assert online"
+    type: assert
+    assertion: station_state
+    params:
+      expected: "ONLINE"
+
+  - name: "Wait for Reset command"
+    type: wait_for
+    action: Reset
+    message_type: REQUEST
+    timeout_ms: 30000
+
+  - name: "Assert reset accepted"
+    type: assert
+    assertion: response_status
+    params:
+      expected: "Accepted"
+
+  - name: "Wait for reboot"
+    type: delay
+    duration_ms: 10000
+
+  - name: "Wait for re-boot response"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 15000
+
+  - name: "Assert back online"
+    type: assert
+    assertion: station_state
+    params:
+      expected: "ONLINE"

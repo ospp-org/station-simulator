@@ -1,0 +1,74 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Handlers;
+
+use App\AutoResponder\AutoResponderConfig;
+use App\AutoResponder\DelaySimulator;
+use App\AutoResponder\ResponseDecider;
+use App\AutoResponder\ResponseDecision;
+use App\Logging\ColoredConsoleOutput;
+use App\Mqtt\MessageSender;
+use App\Station\SimulatedStation;
+use OneStopPay\OsppProtocol\Actions\OsppAction;
+use OneStopPay\OsppProtocol\Envelope\MessageEnvelope;
+
+final class UpdateServiceCatalogHandler
+{
+    public function __construct(
+        private readonly MessageSender $sender,
+        private readonly ResponseDecider $decider,
+        private readonly DelaySimulator $delay,
+        private readonly ColoredConsoleOutput $output,
+    ) {}
+
+    public function __invoke(SimulatedStation $station, MessageEnvelope $envelope): void
+    {
+        $stationId = $station->getStationId();
+        $payload = $envelope->payload;
+        $services = $payload['services'] ?? [];
+
+        $this->output->config("UpdateServiceCatalog for {$stationId}: " . count($services) . " services");
+
+        $behaviorConfig = $station->config->getBehaviorFor('update_service_catalog') ?? [];
+        $config = AutoResponderConfig::fromArray('update_service_catalog', $behaviorConfig);
+        $delayRange = $behaviorConfig['response_delay_ms'] ?? [100, 300];
+
+        $this->delay->afterDelay($delayRange, function () use ($station, $envelope, $config, $services): void {
+            $decision = $this->decider->decide($config);
+
+            if ($decision !== ResponseDecision::ACCEPTED) {
+                $this->sender->sendResponse($station, OsppAction::UPDATE_SERVICE_CATALOG, [
+                    'status' => 'Rejected',
+                ], $envelope);
+
+                return;
+            }
+
+            // Update internal services on all bays
+            foreach ($station->getBays() as $bay) {
+                $bay->services = $services;
+            }
+
+            $this->sender->sendResponse($station, OsppAction::UPDATE_SERVICE_CATALOG, [
+                'status' => 'Accepted',
+                'servicesUpdated' => count($services),
+            ], $envelope);
+
+            // Send StatusNotification per bay to reflect service changes
+            foreach ($station->getBays() as $bay) {
+                $this->sender->sendEvent($station, OsppAction::STATUS_NOTIFICATION, [
+                    'stationId' => $station->getStationId(),
+                    'bayId' => $bay->bayId,
+                    'bayNumber' => $bay->bayNumber,
+                    'status' => $bay->status->toOspp(),
+                    'services' => $services,
+                    'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
+                ]);
+            }
+
+            $this->output->config("Service catalog updated: " . count($services) . " services applied");
+        });
+    }
+}

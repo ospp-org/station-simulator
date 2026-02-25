@@ -1,0 +1,63 @@
+name: "Session Rejected on Faulted Bay"
+description: "Fault a bay then attempt StartService, verify rejection with correct error code"
+station_count: 1
+timeout_seconds: 30
+tags: [session, rejection, fault]
+
+steps:
+  - name: "Send BootNotification"
+    type: send
+    action: BootNotification
+    message_type: REQUEST
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "OneStopPay"
+      serialNumber: "{{serialNumber}}"
+      bayCount: 4
+      bootReason: "power_on"
+
+  - name: "Wait for boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 5000
+
+  - name: "Wait for StatusNotification"
+    type: wait_for
+    action: StatusNotification
+    message_type: EVENT
+    timeout_ms: 3000
+
+  - name: "Inject fault on bay 1"
+    type: fault
+    bay_number: 1
+    error_code: 5001
+    error_text: "PUMP_SYSTEM"
+
+  - name: "Assert bay 1 faulted"
+    type: assert
+    assertion: bay_status
+    params:
+      bay_number: 1
+      expected: "Faulted"
+
+  - name: "Wait for StartService on faulted bay"
+    type: wait_for
+    action: StartService
+    message_type: REQUEST
+    timeout_ms: 30000
+
+  - name: "Assert rejection response"
+    type: assert
+    assertion: response_status
+    params:
+      expected: "Rejected"
+
+  - name: "Assert error code 3002"
+    type: assert
+    assertion: payload_field
+    params:
+      field: "errorCode"
+      value: 3002

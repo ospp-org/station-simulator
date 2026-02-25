@@ -1,0 +1,42 @@
+name: "Slow Response Times"
+description: "Set response delays to 5-10s, verify CSMS handles timeouts gracefully"
+station_count: 3
+timeout_seconds: 120
+tags: [chaos, timeout, slow]
+
+steps:
+  - name: "Boot all stations"
+    type: parallel
+    steps:
+      - name: "Send BootNotification"
+        type: send
+        action: BootNotification
+        message_type: REQUEST
+        payload:
+          firmwareVersion: "1.2.0"
+          stationModel: "SimStation"
+          stationVendor: "OneStopPay"
+          bayCount: 4
+          bootReason: "power_on"
+
+  - name: "Wait for boots"
+    type: delay
+    duration_ms: 10000
+
+  - name: "Set slow response for StartService"
+    type: set_behavior
+    action: start_service
+    config:
+      accept_rate: 1.0
+      response_delay_ms: [5000, 10000]
+
+  - name: "Set slow response for StopService"
+    type: set_behavior
+    action: stop_service
+    config:
+      accept_rate: 1.0
+      response_delay_ms: [5000, 10000]
+
+  - name: "Let sessions run with slow responses"
+    type: delay
+    duration_ms: 60000

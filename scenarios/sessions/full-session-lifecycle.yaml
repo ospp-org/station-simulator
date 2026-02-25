@@ -1,0 +1,102 @@
+name: "Full Session Lifecycle"
+description: "Boot → StartService → MeterValues → StopService → Finishing → Available"
+station_count: 1
+timeout_seconds: 60
+tags: [session, lifecycle, smoke]
+
+steps:
+  - name: "Send BootNotification"
+    type: send
+    action: BootNotification
+    message_type: REQUEST
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "OneStopPay"
+      serialNumber: "{{serialNumber}}"
+      bayCount: 4
+      bootReason: "power_on"
+
+  - name: "Wait for boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 5000
+
+  - name: "Wait for StatusNotification"
+    type: wait_for
+    action: StatusNotification
+    message_type: EVENT
+    timeout_ms: 3000
+
+  - name: "Assert bay 1 available"
+    type: assert
+    assertion: bay_status
+    params:
+      bay_number: 1
+      expected: "Available"
+
+  - name: "Wait for StartService command"
+    type: wait_for
+    action: StartService
+    message_type: REQUEST
+    timeout_ms: 30000
+
+  - name: "Assert bay 1 occupied"
+    type: assert
+    assertion: bay_status
+    params:
+      bay_number: 1
+      expected: "Occupied"
+
+  - name: "Assert session active on bay 1"
+    type: assert
+    assertion: session_active
+    params:
+      bay_number: 1
+      expected: true
+
+  - name: "Wait for first MeterValues"
+    type: wait_for
+    action: MeterValues
+    message_type: EVENT
+    timeout_ms: 15000
+
+  - name: "Wait for second MeterValues"
+    type: wait_for
+    action: MeterValues
+    message_type: EVENT
+    timeout_ms: 15000
+
+  - name: "Assert meter values monotonic"
+    type: assert
+    assertion: meter_values_monotonic
+
+  - name: "Wait for StopService command"
+    type: wait_for
+    action: StopService
+    message_type: REQUEST
+    timeout_ms: 30000
+
+  - name: "Wait for bay to return to Available"
+    type: delay
+    duration_ms: 7000
+
+  - name: "Assert bay 1 available again"
+    type: assert
+    assertion: bay_status
+    params:
+      bay_number: 1
+      expected: "Available"
+
+  - name: "Assert session no longer active"
+    type: assert
+    assertion: session_active
+    params:
+      bay_number: 1
+      expected: false
+
+  - name: "Assert no errors"
+    type: assert
+    assertion: no_errors

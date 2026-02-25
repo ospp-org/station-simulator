@@ -1,0 +1,57 @@
+name: "Configuration Change"
+description: "Read current config, change a value, verify it was accepted"
+station_count: 1
+timeout_seconds: 30
+tags: [device-management, configuration]
+
+steps:
+  - name: "Send BootNotification"
+    type: send
+    action: BootNotification
+    message_type: REQUEST
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "OneStopPay"
+      serialNumber: "{{serialNumber}}"
+      bayCount: 4
+      bootReason: "power_on"
+
+  - name: "Wait for boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 5000
+
+  - name: "Set change config behavior to always accept"
+    type: set_behavior
+    action: change_configuration
+    config:
+      accept_rate: 1.0
+      reboot_required_rate: 0.0
+      not_supported_rate: 0.0
+
+  - name: "Wait for GetConfiguration"
+    type: wait_for
+    action: GetConfiguration
+    message_type: REQUEST
+    timeout_ms: 30000
+
+  - name: "Assert get config accepted"
+    type: assert
+    assertion: response_status
+    params:
+      expected: "Accepted"
+
+  - name: "Wait for ChangeConfiguration"
+    type: wait_for
+    action: ChangeConfiguration
+    message_type: REQUEST
+    timeout_ms: 30000
+
+  - name: "Assert change config accepted"
+    type: assert
+    assertion: response_status
+    params:
+      expected: "Accepted"

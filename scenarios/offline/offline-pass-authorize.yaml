@@ -1,0 +1,64 @@
+name: "Offline Pass Authorization"
+description: "Send AuthorizeOfflinePass request with signed pass, verify response"
+station_count: 1
+timeout_seconds: 30
+tags: [offline, authorization]
+
+steps:
+  - name: "Send BootNotification"
+    type: send
+    action: BootNotification
+    message_type: REQUEST
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "OneStopPay"
+      serialNumber: "{{serialNumber}}"
+      bayCount: 4
+      bootReason: "power_on"
+
+  - name: "Wait for boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 5000
+
+  - name: "Send AuthorizeOfflinePass"
+    type: send
+    action: AuthorizeOfflinePass
+    message_type: REQUEST
+    payload:
+      offlinePassId: "pass_offline_001"
+      offlinePass:
+        sub: "user-001"
+        deviceId: "{{stationId}}"
+        issuedAt: "2026-01-01T00:00:00.000Z"
+        expiresAt: "2026-01-02T00:00:00.000Z"
+        offlineAllowance:
+          maxCredits: 500
+          maxUses: 10
+        constraints:
+          allowedServices: ["wash_basic", "vacuum", "air"]
+          maxSingleTransaction: 200
+      deviceId: "{{stationId}}"
+      counter: 1
+      bayId: "bay_{{stationId}}_1"
+      serviceId: "wash_basic"
+
+  - name: "Wait for authorization response"
+    type: wait_for
+    action: AuthorizeOfflinePass
+    message_type: RESPONSE
+    timeout_ms: 10000
+
+  - name: "Assert response received"
+    type: assert
+    assertion: message_received
+    params:
+      action: "AuthorizeOfflinePass"
+      message_type: "RESPONSE"
+
+  - name: "Assert no errors"
+    type: assert
+    assertion: no_errors

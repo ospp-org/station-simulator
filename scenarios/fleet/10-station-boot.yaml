@@ -1,0 +1,28 @@
+name: "10-Station Boot"
+description: "Boot 10 stations in parallel, all should be accepted"
+station_count: 10
+timeout_seconds: 60
+tags: [fleet, boot, smoke]
+
+steps:
+  - name: "Boot all stations"
+    type: parallel
+    steps:
+      - name: "Send BootNotification for each station"
+        type: send
+        action: BootNotification
+        message_type: REQUEST
+        payload:
+          firmwareVersion: "1.2.0"
+          stationModel: "SimStation"
+          stationVendor: "OneStopPay"
+          bayCount: 4
+          bootReason: "power_on"
+
+  - name: "Wait for all boot responses"
+    type: delay
+    duration_ms: 10000
+
+  - name: "Assert no errors across fleet"
+    type: assert
+    assertion: no_errors

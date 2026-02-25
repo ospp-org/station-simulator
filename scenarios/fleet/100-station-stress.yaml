@@ -1,0 +1,32 @@
+name: "100-Station Stress Test"
+description: "Boot 100 stations with sessions and meter values flood"
+station_count: 100
+timeout_seconds: 300
+tags: [fleet, stress, load]
+
+steps:
+  - name: "Boot all stations in parallel"
+    type: parallel
+    steps:
+      - name: "Send BootNotification"
+        type: send
+        action: BootNotification
+        message_type: REQUEST
+        payload:
+          firmwareVersion: "1.2.0"
+          stationModel: "SimStation"
+          stationVendor: "OneStopPay"
+          bayCount: 4
+          bootReason: "power_on"
+
+  - name: "Wait for all boots and initial StatusNotifications"
+    type: delay
+    duration_ms: 30000
+
+  - name: "Let meter values stream for 2 minutes"
+    type: delay
+    duration_ms: 120000
+
+  - name: "Assert fleet stability"
+    type: assert
+    assertion: no_errors

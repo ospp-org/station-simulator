@@ -1,0 +1,49 @@
+name: "Heartbeat Cycle"
+description: "Boot, then verify 5 consecutive heartbeat messages are sent and responses received"
+station_count: 1
+timeout_seconds: 180
+tags: [core, heartbeat]
+
+steps:
+  - name: "Send BootNotification"
+    type: send
+    action: BootNotification
+    message_type: REQUEST
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "OneStopPay"
+      serialNumber: "{{serialNumber}}"
+      bayCount: 4
+      bootReason: "power_on"
+
+  - name: "Wait for boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 5000
+
+  - name: "Assert station online"
+    type: assert
+    assertion: station_state
+    params:
+      expected: "ONLINE"
+
+  - name: "Wait for 5 heartbeats"
+    type: repeat
+    count: 5
+    steps:
+      - name: "Wait for heartbeat"
+        type: wait_for
+        action: Heartbeat
+        message_type: REQUEST
+        timeout_ms: 35000
+
+  - name: "Assert 5+ heartbeats sent"
+    type: assert
+    assertion: message_count
+    params:
+      action: "Heartbeat"
+      message_type: "REQUEST"
+      min: 5

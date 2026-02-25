@@ -1,0 +1,14 @@
+/vendor/
+.env
+.phpunit.cache/
+.phpunit.result.cache
+/keys/*.pem
+/results/
+/coverage/
+*.log
+
+# Claude Code
+.claude/
+
+# Internal planning docs
+docs/PLAN.md

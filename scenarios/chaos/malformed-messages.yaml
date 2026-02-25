@@ -1,0 +1,51 @@
+name: "Malformed Messages"
+description: "Send invalid JSON, missing fields, wrong types to verify CSMS error handling"
+station_count: 1
+timeout_seconds: 30
+tags: [chaos, malformed, validation]
+
+steps:
+  - name: "Send BootNotification"
+    type: send
+    action: BootNotification
+    message_type: REQUEST
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "OneStopPay"
+      serialNumber: "{{serialNumber}}"
+      bayCount: 4
+      bootReason: "power_on"
+
+  - name: "Wait for boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 5000
+
+  - name: "Send message with missing required field"
+    type: send
+    action: StatusNotification
+    message_type: EVENT
+    payload:
+      stationId: "{{stationId}}"
+
+  - name: "Send message with wrong type"
+    type: send
+    action: StatusNotification
+    message_type: EVENT
+    payload:
+      stationId: "{{stationId}}"
+      bayId: 12345
+      status: "InvalidStatus"
+
+  - name: "Small delay to let CSMS process"
+    type: delay
+    duration_ms: 3000
+
+  - name: "Assert station still operational"
+    type: assert
+    assertion: station_state
+    params:
+      expected: "ONLINE"
