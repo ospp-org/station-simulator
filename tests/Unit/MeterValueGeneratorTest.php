@@ -39,13 +39,13 @@ final class MeterValueGeneratorTest extends TestCase
                 'jitter_percent' => 15,
                 'profiles' => [
                     'wash_basic' => [
-                        'water_ml_per_s' => [150, 300],
-                        'chemical_ml_per_s' => [10, 20],
+                        'liquid_ml_per_s' => [150, 300],
+                        'consumable_ml_per_s' => [10, 20],
                         'energy_wh_per_s' => [5, 15],
                     ],
                     'air' => [
-                        'water_ml_per_s' => [0, 0],
-                        'chemical_ml_per_s' => [0, 0],
+                        'liquid_ml_per_s' => [0, 0],
+                        'consumable_ml_per_s' => [0, 0],
                         'energy_wh_per_s' => [30, 60],
                     ],
                 ],
@@ -60,17 +60,17 @@ final class MeterValueGeneratorTest extends TestCase
         $bay->startSession('session_1', 'wash_basic');
 
         $values1 = $this->generator->tick($bay, $this->config);
-        $this->assertGreaterThan(0.0, $values1['water_ml']);
-        $this->assertGreaterThan(0.0, $values1['chemical_ml']);
+        $this->assertGreaterThan(0.0, $values1['liquid_ml']);
+        $this->assertGreaterThan(0.0, $values1['consumable_ml']);
         $this->assertGreaterThan(0.0, $values1['energy_wh']);
 
         $values2 = $this->generator->tick($bay, $this->config);
-        $this->assertGreaterThanOrEqual($values1['water_ml'], $values2['water_ml']);
-        $this->assertGreaterThanOrEqual($values1['chemical_ml'], $values2['chemical_ml']);
+        $this->assertGreaterThanOrEqual($values1['liquid_ml'], $values2['liquid_ml']);
+        $this->assertGreaterThanOrEqual($values1['consumable_ml'], $values2['consumable_ml']);
         $this->assertGreaterThanOrEqual($values1['energy_wh'], $values2['energy_wh']);
 
         $values3 = $this->generator->tick($bay, $this->config);
-        $this->assertGreaterThanOrEqual($values2['water_ml'], $values3['water_ml']);
+        $this->assertGreaterThanOrEqual($values2['liquid_ml'], $values3['liquid_ml']);
     }
 
     public function test_zero_values_for_air_service_water_and_chemical(): void
@@ -80,8 +80,8 @@ final class MeterValueGeneratorTest extends TestCase
 
         $values = $this->generator->tick($bay, $this->config);
 
-        $this->assertSame(0.0, $values['water_ml']);
-        $this->assertSame(0.0, $values['chemical_ml']);
+        $this->assertSame(0.0, $values['liquid_ml']);
+        $this->assertSame(0.0, $values['consumable_ml']);
         $this->assertGreaterThan(0.0, $values['energy_wh']);
     }
 
@@ -103,8 +103,8 @@ final class MeterValueGeneratorTest extends TestCase
         $values = $this->generator->tick($bay, $this->config);
 
         // Returns the existing accumulator (initialized with zeros by startSession)
-        $this->assertSame(0.0, $values['water_ml']);
-        $this->assertSame(0.0, $values['chemical_ml']);
+        $this->assertSame(0.0, $values['liquid_ml']);
+        $this->assertSame(0.0, $values['consumable_ml']);
         $this->assertSame(0.0, $values['energy_wh']);
     }
 
@@ -124,8 +124,8 @@ final class MeterValueGeneratorTest extends TestCase
         $this->assertArrayNotHasKey('durationSeconds', $payload);
 
         $mv = $payload['values'];
-        $this->assertArrayHasKey('waterMl', $mv);
-        $this->assertArrayHasKey('chemicalMl', $mv);
+        $this->assertArrayHasKey('liquidMl', $mv);
+        $this->assertArrayHasKey('consumableMl', $mv);
         $this->assertArrayHasKey('energyWh', $mv);
     }
 

@@ -40,6 +40,7 @@ final class ScenarioParser
             steps: $data['steps'] ?? [],
             tags: $data['tags'] ?? [],
             timeoutSeconds: (int) ($data['timeout_seconds'] ?? 60),
+            config: $data['config'] ?? [],
         );
     }
 

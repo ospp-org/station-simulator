@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Generators;
 
-use App\Station\BootReason;
 use App\Station\SimulatedStation;
-use Ospp\Protocol\Enums\BayStatus;
 
 final class BootPayloadGenerator
 {
@@ -17,23 +15,6 @@ final class BootPayloadGenerator
     {
         $identity = $station->identity;
         $config = $station->config;
-
-        $bays = [];
-        foreach ($station->getBays() as $bay) {
-            $bays[] = [
-                'bayId' => $bay->bayId,
-                'bayNumber' => $bay->bayNumber,
-                'status' => BayStatus::AVAILABLE->toOspp(),
-                'services' => array_map(fn (array $svc): array => [
-                    'serviceId' => $svc['service_id'],
-                    'serviceName' => $svc['service_name'],
-                    'pricingType' => $svc['pricing_type'],
-                    'priceCreditsFixed' => $svc['price_credits_fixed'],
-                    'priceCreditsPerMinute' => $svc['price_credits_per_minute'],
-                    'available' => $svc['available'],
-                ], $bay->services),
-            ];
-        }
 
         return [
             'stationId' => $identity->stationId,
@@ -53,12 +34,11 @@ final class BootPayloadGenerator
                 'deviceManagementSupported' => $config->capabilities['device_management_supported'] ?? false,
             ],
             'networkInfo' => [
-                'connectionType' => $config->network['connection_type'] ?? 'ethernet',
+                'connectionType' => ucfirst($config->network['connection_type'] ?? 'ethernet'),
                 'signalStrength' => $config->network['signal_strength'] ?? null,
             ],
             'timezone' => $config->timezone,
             'bootReason' => $station->state->bootReason,
-            'bays' => $bays,
         ];
     }
 }

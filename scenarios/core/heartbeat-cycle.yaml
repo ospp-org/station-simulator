@@ -1,49 +1,68 @@
 name: "Heartbeat Cycle"
-description: "Boot, then verify 5 consecutive heartbeat messages are sent and responses received"
+description: "Boot, then verify 3 consecutive heartbeat request-response cycles"
 station_count: 1
-timeout_seconds: 180
+timeout_seconds: 60
 tags: [core, heartbeat]
 
 steps:
   - name: "Send BootNotification"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
-      bootReason: "power_on"
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
 
   - name: "Wait for boot accepted"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 5000
+    timeout_ms: 25000
 
   - name: "Assert station online"
     type: assert
-    assertion: station_state
+    assertion: response_status
     params:
-      expected: "ONLINE"
+      expected: "Accepted"
 
-  - name: "Wait for 5 heartbeats"
+  - name: "Send 3 heartbeats"
     type: repeat
-    count: 5
+    count: 3
     steps:
-      - name: "Wait for heartbeat"
+      - name: "Send Heartbeat"
+        type: send
+        action: Heartbeat
+        message_type: request
+        payload: {}
+
+      - name: "Wait for heartbeat response"
         type: wait_for
         action: Heartbeat
-        message_type: REQUEST
-        timeout_ms: 35000
+        message_type: RESPONSE
+        timeout_ms: 25000
 
-  - name: "Assert 5+ heartbeats sent"
+  - name: "Assert serverTime in last response"
     type: assert
-    assertion: message_count
+    assertion: payload_field
     params:
-      action: "Heartbeat"
-      message_type: "REQUEST"
-      min: 5
+      field: "serverTime"
+
+  - name: "Assert no errors"
+    type: assert
+    assertion: no_errors

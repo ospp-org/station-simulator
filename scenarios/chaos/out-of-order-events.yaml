@@ -30,7 +30,7 @@ steps:
     message_type: EVENT
     payload:
       stationId: "{{stationId}}"
-      bayId: "bay_{{stationId}}_1"
+      bayId: "{{bayId_1}}"
       sessionId: "nonexistent-session"
       meterValues:
         waterConsumptionMl: 100.0

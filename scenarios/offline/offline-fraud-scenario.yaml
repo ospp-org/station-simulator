@@ -36,8 +36,8 @@ steps:
           offlineTxId: "tx_fraud_{{counter}}"
           offlinePassId: "pass_suspicious_001"
           userId: "user-suspect-001"
-          bayId: "bay_{{stationId}}_1"
-          serviceId: "wash_premium"
+          bayId: "{{bayId_1}}"
+          serviceId: "svc_wash_premium"
           txCounter: 1
           durationSeconds: 120
           creditsCharged: 100
@@ -48,8 +48,8 @@ steps:
             signature: "test-signature"
             signatureAlgorithm: "ECDSA-P256-SHA256"
           meterValues:
-            waterMl: 3000
-            chemicalMl: 250
+            liquidMl: 3000
+            consumableMl: 250
             energyWh: 120
 
       - name: "Small delay between transactions"

@@ -31,8 +31,11 @@ final class BayState
 
     public static function create(string $stationId, int $bayNumber): self
     {
+        // bayId must match CSMS schema: ^bay_[a-f0-9]{8,}$
+        $hash = substr(md5($stationId . '_' . $bayNumber), 0, 12);
+
         return new self(
-            bayId: "bay_{$stationId}_{$bayNumber}",
+            bayId: "bay_{$hash}",
             bayNumber: $bayNumber,
         );
     }
@@ -49,8 +52,8 @@ final class BayState
         $this->currentServiceId = $serviceId;
         $this->sessionStartTime = new DateTimeImmutable();
         $this->meterAccumulator = [
-            'water_ml' => 0.0,
-            'chemical_ml' => 0.0,
+            'liquid_ml' => 0.0,
+            'consumable_ml' => 0.0,
             'energy_wh' => 0.0,
         ];
     }

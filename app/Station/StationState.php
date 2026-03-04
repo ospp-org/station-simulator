@@ -23,6 +23,12 @@ final class StationState
     /** @var array<string, string> */
     public array $configValues = [];
 
+    /** @var array<string, string> PEM certificates keyed by CertificateType value */
+    public array $certificates = [];
+
+    /** @var list<array{vendorId: string, dataId: string, data: ?array}> */
+    public array $dataTransfers = [];
+
     public function __construct(StationConfig $config)
     {
         foreach ($config->configuration as $key => $value) {

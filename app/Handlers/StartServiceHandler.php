@@ -88,7 +88,8 @@ final class StartServiceHandler
         // Consult auto-responder
         $decision = $this->decider->decide($config);
 
-        $this->delay->afterConfigDelay($config, function () use (
+        $stationId = $station->getStationId();
+        $this->delay->afterConfigDelay("start-service:{$stationId}:{$bayId}", $config, function () use (
             $station, $envelope, $bay, $bayId, $sessionId, $serviceId, $decision, $config,
         ): void {
             if ($decision !== ResponseDecision::ACCEPTED) {
@@ -98,6 +99,21 @@ final class StartServiceHandler
                     $config->rejectErrorCode ?? 3003,
                     $config->rejectErrorText ?? 'Service unavailable',
                 );
+
+                return;
+            }
+
+            // TOCTOU guard: re-check bay status inside async callback
+            if ($bay->status === BayStatus::OCCUPIED) {
+                if ($bay->currentSessionId === $sessionId) {
+                    // Idempotent: same session already started, re-send Accepted
+                    $this->sender->sendResponse($station, OsppAction::START_SERVICE, [
+                        'status' => 'Accepted',
+                    ], $envelope);
+
+                    return;
+                }
+                $this->sendReject($station, $envelope, 3001, 'Bay already in use');
 
                 return;
             }
@@ -114,9 +130,6 @@ final class StartServiceHandler
             // Send accept response
             $this->sender->sendResponse($station, OsppAction::START_SERVICE, [
                 'status' => 'Accepted',
-                'stationId' => $station->getStationId(),
-                'bayId' => $bayId,
-                'sessionId' => $sessionId,
             ], $envelope);
 
             $station->emit('session.updated', [
@@ -136,7 +149,7 @@ final class StartServiceHandler
                     $payload = $this->meterGenerator->buildPayload($bay, $station->getStationId());
                     $this->sender->sendEvent($station, OsppAction::METER_VALUES, $payload);
 
-                    $this->output->meter("MeterValues for bay {$bay->bayId}: water={$payload['values']['waterMl']}ml energy={$payload['values']['energyWh']}Wh");
+                    $this->output->meter("MeterValues for bay {$bay->bayId}: liquid={$payload['values']['liquidMl']}ml energy={$payload['values']['energyWh']}Wh");
                 },
             );
 
@@ -166,8 +179,6 @@ final class StartServiceHandler
 
         $this->sender->sendResponse($station, OsppAction::START_SERVICE, [
             'status' => 'Rejected',
-            'stationId' => $station->getStationId(),
-            'bayId' => $envelope->payload['bayId'] ?? '',
             'errorCode' => $errorCode,
             'errorText' => $errorText,
         ], $envelope);

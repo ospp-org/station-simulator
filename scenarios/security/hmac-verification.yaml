@@ -1,0 +1,142 @@
+name: "HMAC Verification"
+description: "Verify critical messages are signed with HMAC-SHA256 and non-critical are unsigned"
+station_count: 1
+timeout_seconds: 30
+tags: [security, hmac, signing]
+
+steps:
+  - name: "Send BootNotification (unsigned — no session key yet)"
+    type: send
+    action: BootNotification
+    message_type: request
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "AcmeCorp"
+      serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
+      bayCount: 4
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
+
+  - name: "Assert first boot was unsigned (no session key)"
+    type: assert
+    assertion: hmac_valid
+    params:
+      source: "sent"
+      expected: false
+
+  - name: "Wait for boot response (receive session key)"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 25000
+
+  - name: "Assert boot accepted"
+    type: assert
+    assertion: response_status
+    params:
+      expected: "Accepted"
+
+  - name: "Assert session key received"
+    type: assert
+    assertion: payload_field
+    params:
+      field: "sessionKey"
+
+  - name: "Send Heartbeat (non-critical — should be unsigned)"
+    type: send
+    action: Heartbeat
+    message_type: request
+    payload: {}
+
+  - name: "Assert Heartbeat was unsigned (non-critical)"
+    type: assert
+    assertion: hmac_valid
+    params:
+      source: "sent"
+      expected: false
+
+  - name: "Wait for Heartbeat response"
+    type: wait_for
+    action: Heartbeat
+    message_type: RESPONSE
+    timeout_ms: 25000
+
+  - name: "Send second BootNotification (critical — should be signed)"
+    type: send
+    action: BootNotification
+    message_type: request
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "AcmeCorp"
+      serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 15
+      pendingOfflineTransactions: 0
+      bayCount: 4
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "Watchdog"
+
+  - name: "Assert second BootNotification was signed (has session key now)"
+    type: assert
+    assertion: hmac_valid
+    params:
+      source: "sent"
+      expected: true
+
+  - name: "Wait for second boot response"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 25000
+
+  - name: "Assert second boot accepted"
+    type: assert
+    assertion: response_status
+    params:
+      expected: "Accepted"
+
+  - name: "Send StatusNotification (non-critical event — should be unsigned)"
+    type: send
+    action: StatusNotification
+    message_type: event
+    payload:
+      stationId: "{{stationId}}"
+      bays:
+        - bayId: "{{bayId_1}}"
+          status: "Available"
+          services: ["{{serviceId_1}}"]
+        - bayId: "{{bayId_2}}"
+          status: "Available"
+          services: ["{{serviceId_2}}"]
+
+  - name: "Assert StatusNotification was unsigned (non-critical)"
+    type: assert
+    assertion: hmac_valid
+    params:
+      source: "sent"
+      expected: false
+
+  - name: "Assert no errors"
+    type: assert
+    assertion: no_errors

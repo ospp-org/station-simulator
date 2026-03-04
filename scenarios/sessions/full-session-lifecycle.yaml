@@ -1,34 +1,49 @@
 name: "Full Session Lifecycle"
-description: "Boot → StartService → MeterValues → StopService → Finishing → Available"
+description: "Boot → StartService → MeterValues → StopService → TransactionEvent → Available"
 station_count: 1
 timeout_seconds: 60
 tags: [session, lifecycle, smoke]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
 
 steps:
   - name: "Send BootNotification"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
-      bootReason: "power_on"
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
 
   - name: "Wait for boot accepted"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 5000
+    timeout_ms: 25000
 
-  - name: "Wait for StatusNotification"
-    type: wait_for
-    action: StatusNotification
-    message_type: EVENT
-    timeout_ms: 3000
+  - name: "Wait for bays ready"
+    type: delay
+    duration_ms: 2000
 
   - name: "Assert bay 1 available"
     type: assert
@@ -37,11 +52,27 @@ steps:
       bay_number: 1
       expected: "Available"
 
+  - name: "Start service via CSMS API"
+    type: api_call
+    method: POST
+    path: "/api/v1/sessions/start"
+    body:
+      bay_id: "{{bayId_1}}"
+      service_id: "{{serviceId_1}}"
+      duration_seconds: 300
+    expect_status: 201
+    capture:
+      session_id: "data.id"
+
   - name: "Wait for StartService command"
     type: wait_for
     action: StartService
     message_type: REQUEST
-    timeout_ms: 30000
+    timeout_ms: 25000
+
+  - name: "Wait for handler to process"
+    type: delay
+    duration_ms: 500
 
   - name: "Assert bay 1 occupied"
     type: assert
@@ -61,23 +92,35 @@ steps:
     type: wait_for
     action: MeterValues
     message_type: EVENT
-    timeout_ms: 15000
+    timeout_ms: 25000
 
   - name: "Wait for second MeterValues"
     type: wait_for
     action: MeterValues
     message_type: EVENT
-    timeout_ms: 15000
+    timeout_ms: 25000
 
   - name: "Assert meter values monotonic"
     type: assert
     assertion: meter_values_monotonic
 
+  - name: "Wait for CSMS to transition session to active"
+    type: delay
+    duration_ms: 2000
+
+  - name: "Stop service via CSMS API"
+    type: api_call
+    method: POST
+    path: "/api/v1/sessions/{{captured.session_id}}/stop"
+    expect_status: 200
+    retry_max_attempts: 10
+    retry_interval_ms: 2000
+
   - name: "Wait for StopService command"
     type: wait_for
     action: StopService
     message_type: REQUEST
-    timeout_ms: 30000
+    timeout_ms: 25000
 
   - name: "Wait for bay to return to Available"
     type: delay

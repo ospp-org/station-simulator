@@ -74,7 +74,8 @@ final class StartServiceHandlerTest extends TestCase
             ->withArgs(function (SimulatedStation $s, string $action, array $payload) {
                 return $payload['errorCode'] === 3005
                     && $payload['status'] === 'Rejected';
-            });
+            })
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }
@@ -89,7 +90,8 @@ final class StartServiceHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3001);
+            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3001)
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }
@@ -104,7 +106,8 @@ final class StartServiceHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3002);
+            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3002)
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }
@@ -119,7 +122,8 @@ final class StartServiceHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3011);
+            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3011)
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }
@@ -140,7 +144,8 @@ final class StartServiceHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3014);
+            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3014)
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }

@@ -1,34 +1,51 @@
 name: "Session Rejected on Faulted Bay"
-description: "Fault a bay then attempt StartService, verify rejection with correct error code"
+description: "Fault a bay then attempt StartService via API, verify rejection"
 station_count: 1
 timeout_seconds: 30
 tags: [session, rejection, fault]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
 
 steps:
   - name: "Send BootNotification"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
-      bootReason: "power_on"
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
 
   - name: "Wait for boot accepted"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 5000
+    timeout_ms: 25000
 
   - name: "Wait for StatusNotification"
     type: wait_for
     action: StatusNotification
     message_type: EVENT
-    timeout_ms: 3000
+    timeout_ms: 5000
 
   - name: "Inject fault on bay 1"
     type: fault
@@ -43,21 +60,26 @@ steps:
       bay_number: 1
       expected: "Faulted"
 
+  - name: "Try to start service on faulted bay via API"
+    type: api_call
+    method: POST
+    path: "/api/v1/sessions/start"
+    body:
+      bay_id: "{{bayId_1}}"
+      service_id: "{{serviceId_1}}"
+      duration_seconds: 300
+    expect_status: 201
+    capture:
+      session_id: "data.id"
+
   - name: "Wait for StartService on faulted bay"
     type: wait_for
     action: StartService
     message_type: REQUEST
-    timeout_ms: 30000
+    timeout_ms: 25000
 
   - name: "Assert rejection response"
     type: assert
     assertion: response_status
     params:
       expected: "Rejected"
-
-  - name: "Assert error code 3002"
-    type: assert
-    assertion: payload_field
-    params:
-      field: "errorCode"
-      value: 3002

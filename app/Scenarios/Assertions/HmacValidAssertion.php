@@ -12,20 +12,46 @@ final class HmacValidAssertion implements AssertionInterface
 
     public function evaluate(array $params, ScenarioContext $context): bool
     {
-        $lastReceived = $context->lastReceivedMessage;
-        if ($lastReceived === null) {
-            $this->lastMessage = "No message received";
+        $source = $params['source'] ?? 'received';
+
+        $message = $source === 'sent'
+            ? $context->lastSentMessage
+            : $context->lastReceivedMessage;
+
+        if ($message === null) {
+            $this->lastMessage = "No {$source} message available";
+
             return false;
         }
 
-        if ($lastReceived->isSigned()) {
-            $this->lastMessage = "Last message has HMAC signature";
+        $expectSigned = ($params['expected'] ?? true) !== false;
+
+        if ($expectSigned) {
+            if ($message->isSigned()) {
+                $this->lastMessage = "Last {$source} message has HMAC signature";
+
+                return true;
+            }
+
+            $this->lastMessage = "Expected last {$source} message to have HMAC, but it was unsigned";
+
+            return false;
+        }
+
+        // expected: false — assert message is NOT signed
+        if (! $message->isSigned()) {
+            $this->lastMessage = "Last {$source} message is unsigned (as expected)";
+
             return true;
         }
 
-        $this->lastMessage = "Last message has no HMAC signature";
+        $this->lastMessage = "Expected last {$source} message to be unsigned, but it has HMAC";
+
         return false;
     }
 
-    public function getLastMessage(): string { return $this->lastMessage; }
+    public function getLastMessage(): string
+    {
+        return $this->lastMessage;
+    }
 }

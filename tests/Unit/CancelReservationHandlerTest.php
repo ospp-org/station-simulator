@@ -61,7 +61,8 @@ final class CancelReservationHandlerTest extends TestCase
             ->once()
             ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3012
                 && $p['status'] === 'Rejected'
-                && $p['errorText'] === 'Reservation not found');
+                && $p['errorText'] === 'Reservation not found')
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }
@@ -79,7 +80,8 @@ final class CancelReservationHandlerTest extends TestCase
         $this->sender->shouldReceive('sendResponse')
             ->once()
             ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3013
-                && $p['errorText'] === 'Reservation expired');
+                && $p['errorText'] === 'Reservation expired')
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }
@@ -96,7 +98,7 @@ final class CancelReservationHandlerTest extends TestCase
         // The delay simulator should execute callback immediately
         $this->delay->shouldReceive('afterConfigDelay')
             ->once()
-            ->andReturnUsing(function ($config, callable $callback): void {
+            ->andReturnUsing(function ($key, $config, callable $callback): void {
                 $callback();
             });
 
@@ -106,8 +108,8 @@ final class CancelReservationHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['status'] === 'Accepted'
-                && $p['reservationId'] === 'res_valid');
+            ->withArgs(fn ($s, $a, $p) => $p === ['status' => 'Accepted'])
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
 

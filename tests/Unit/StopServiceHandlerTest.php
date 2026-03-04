@@ -10,6 +10,7 @@ use App\Generators\MeterValueGenerator;
 use App\Handlers\StopServiceHandler;
 use App\Logging\ColoredConsoleOutput;
 use App\Mqtt\MessageSender;
+use App\Services\StatusNotificationService;
 use App\StateMachines\SimulatedBayFSM;
 use App\StateMachines\SimulatedSessionFSM;
 use App\Station\BayState;
@@ -51,6 +52,7 @@ final class StopServiceHandlerTest extends TestCase
         $this->timers = Mockery::mock(TimerManager::class);
         $this->meterGenerator = new MeterValueGenerator();
         $this->output = Mockery::mock(ColoredConsoleOutput::class)->shouldIgnoreMissing();
+        $statusService = Mockery::mock(StatusNotificationService::class)->shouldIgnoreMissing();
 
         $this->handler = new StopServiceHandler(
             $this->sender,
@@ -60,6 +62,7 @@ final class StopServiceHandlerTest extends TestCase
             $this->delay,
             $this->timers,
             $this->meterGenerator,
+            $statusService,
             $this->output,
         );
     }
@@ -71,7 +74,8 @@ final class StopServiceHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3005 && $p['status'] === 'Rejected');
+            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3005 && $p['status'] === 'Rejected')
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }
@@ -86,7 +90,8 @@ final class StopServiceHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3006);
+            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3006)
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }
@@ -102,7 +107,8 @@ final class StopServiceHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3007);
+            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3007)
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }
@@ -117,7 +123,8 @@ final class StopServiceHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3006);
+            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3006)
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }

@@ -188,7 +188,7 @@ final class MqttConnectionManager
             $lwtTopic = "ospp/v1/stations/{$stationId}/connection-lost";
             $lwtPayload = json_encode([
                 'stationId' => $stationId,
-                'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
+                'reason' => 'UnexpectedDisconnect',
             ], JSON_THROW_ON_ERROR);
 
             $settings = $settings

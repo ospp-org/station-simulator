@@ -1,5 +1,5 @@
 name: "Boot Rejected Retry"
-description: "Boot a station, receive Rejected response with retryInterval, verify retry and eventual accept"
+description: "Boot with reject behavior, verify retry and eventual accept"
 station_count: 1
 timeout_seconds: 120
 tags: [core, boot, retry]
@@ -14,21 +14,32 @@ steps:
   - name: "Send BootNotification"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
-      bootReason: "power_on"
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
 
   - name: "Wait for rejected response"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 5000
+    timeout_ms: 25000
 
   - name: "Assert Rejected"
     type: assert

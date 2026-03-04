@@ -6,12 +6,12 @@ namespace App\Station;
 
 final class BootReason
 {
-    public const POWER_ON = 'power_on';
-    public const WATCHDOG = 'watchdog';
-    public const FIRMWARE_UPDATE = 'firmware_update';
-    public const MANUAL_RESET = 'manual_reset';
-    public const SCHEDULED_RESET = 'scheduled_reset';
-    public const ERROR_RECOVERY = 'error_recovery';
+    public const POWER_ON = 'PowerOn';
+    public const WATCHDOG = 'Watchdog';
+    public const FIRMWARE_UPDATE = 'FirmwareUpdate';
+    public const MANUAL_RESET = 'ManualReset';
+    public const SCHEDULED_RESET = 'ScheduledReset';
+    public const ERROR_RECOVERY = 'ErrorRecovery';
 
     /** @return list<string> */
     public static function all(): array

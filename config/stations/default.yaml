@@ -28,28 +28,28 @@ configuration:
   OfflinePassMaxCredits: 500
 
 services:
-  - service_id: "wash_basic"
+  - service_id: "svc_wash_basic"
     service_name: "Basic Wash"
     pricing_type: "fixed"
     price_credits_fixed: 50
     price_credits_per_minute: null
     available: true
 
-  - service_id: "wash_premium"
+  - service_id: "svc_wash_premium"
     service_name: "Premium Wash"
     pricing_type: "fixed"
     price_credits_fixed: 100
     price_credits_per_minute: null
     available: true
 
-  - service_id: "vacuum"
+  - service_id: "svc_vacuum"
     service_name: "Vacuum"
     pricing_type: "per_minute"
     price_credits_fixed: null
     price_credits_per_minute: 5
     available: true
 
-  - service_id: "air"
+  - service_id: "svc_air"
     service_name: "Air"
     pricing_type: "fixed"
     price_credits_fixed: 10
@@ -121,21 +121,21 @@ meter_values:
   interval_seconds: 10
   jitter_percent: 15
   profiles:
-    wash_basic:
-      water_ml_per_s: [150, 300]
-      chemical_ml_per_s: [10, 20]
+    svc_wash_basic:
+      liquid_ml_per_s: [150, 300]
+      consumable_ml_per_s: [10, 20]
       energy_wh_per_s: [5, 15]
-    wash_premium:
-      water_ml_per_s: [200, 400]
-      chemical_ml_per_s: [20, 40]
+    svc_wash_premium:
+      liquid_ml_per_s: [200, 400]
+      consumable_ml_per_s: [20, 40]
       energy_wh_per_s: [5, 15]
-    vacuum:
-      water_ml_per_s: [0, 0]
-      chemical_ml_per_s: [0, 0]
+    svc_vacuum:
+      liquid_ml_per_s: [0, 0]
+      consumable_ml_per_s: [0, 0]
       energy_wh_per_s: [80, 150]
-    air:
-      water_ml_per_s: [0, 0]
-      chemical_ml_per_s: [0, 0]
+    svc_air:
+      liquid_ml_per_s: [0, 0]
+      consumable_ml_per_s: [0, 0]
       energy_wh_per_s: [30, 60]
 
 offline:

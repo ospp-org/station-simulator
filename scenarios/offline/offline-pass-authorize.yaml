@@ -43,14 +43,14 @@ steps:
           maxSingleTransaction: 200
       deviceId: "{{stationId}}"
       counter: 1
-      bayId: "bay_{{stationId}}_1"
-      serviceId: "wash_basic"
+      bayId: "{{bayId_1}}"
+      serviceId: "{{serviceId_1}}"
 
   - name: "Wait for authorization response"
     type: wait_for
     action: AuthorizeOfflinePass
     message_type: RESPONSE
-    timeout_ms: 10000
+    timeout_ms: 25000
 
   - name: "Assert response received"
     type: assert

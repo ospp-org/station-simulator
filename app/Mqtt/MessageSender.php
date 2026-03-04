@@ -16,13 +16,19 @@ use Ospp\Protocol\Envelope\MessageEnvelope;
 final class MessageSender
 {
     private readonly MacSigner $macSigner;
-    private SigningMode $signingMode = SigningMode::NONE;
+    private SigningMode $signingMode = SigningMode::CRITICAL;
+    private ?\Closure $onSentCallback = null;
 
     public function __construct(
         private readonly MqttConnectionManager $mqtt,
         private readonly MessageLogger $logger,
     ) {
         $this->macSigner = new MacSigner(new CanonicalJsonSerializer());
+    }
+
+    public function setOnSentCallback(\Closure $callback): void
+    {
+        $this->onSentCallback = $callback;
     }
 
     public function setSigningMode(SigningMode $mode): void
@@ -78,12 +84,18 @@ final class MessageSender
             $station->state->sessionKey !== null
             && $this->signingMode->shouldSign($envelope->action)
         ) {
-            $mac = $this->macSigner->sign($envelope->payload, $station->state->sessionKey);
+            $envelopeArray = $envelope->toArray();
+            unset($envelopeArray['mac']);
+            $mac = $this->macSigner->sign($envelopeArray, $station->state->sessionKey);
             $envelope = $envelope->withMac($mac);
         }
 
         $json = $envelope->toJson();
+        // Ensure empty payload serializes as JSON object {} not array []
+        $json = str_replace('"payload":[]', '"payload":{}', $json);
         $this->mqtt->publish($station->getStationId(), $json);
+        // Process any responses that arrived during the blocking publish (QoS 1)
+        $this->mqtt->pollOnce();
         $this->logger->logOutbound($station->getStationId(), $envelope);
 
         $station->emit('message.sent', [
@@ -91,6 +103,10 @@ final class MessageSender
             'messageType' => $envelope->messageType->value,
             'messageId' => (string) $envelope->messageId,
         ]);
+
+        if ($this->onSentCallback !== null) {
+            ($this->onSentCallback)($envelope);
+        }
 
         return $envelope;
     }

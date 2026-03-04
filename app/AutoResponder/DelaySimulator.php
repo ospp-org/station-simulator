@@ -4,29 +4,30 @@ declare(strict_types=1);
 
 namespace App\AutoResponder;
 
-use React\EventLoop\LoopInterface;
+use App\Timers\TimerManager;
 
 final class DelaySimulator
 {
     public function __construct(
-        private readonly LoopInterface $loop,
+        private readonly TimerManager $timers,
     ) {}
 
     /**
-     * Execute callback after a random delay within the config's range.
+     * Execute callback after a random delay within the given range.
      *
+     * @param string $key Named timer key (deduped/cancellable via TimerManager)
      * @param array{int, int} $delayRangeMs [min, max] in milliseconds
      */
-    public function afterDelay(array $delayRangeMs, callable $callback): void
+    public function afterDelay(string $key, array $delayRangeMs, callable $callback): void
     {
         $delayMs = random_int($delayRangeMs[0], $delayRangeMs[1]);
 
-        $this->loop->addTimer($delayMs / 1000, $callback);
+        $this->timers->addTimer($key, $delayMs / 1000, $callback);
     }
 
     /** Execute callback after specified delay from config. */
-    public function afterConfigDelay(AutoResponderConfig $config, callable $callback): void
+    public function afterConfigDelay(string $key, AutoResponderConfig $config, callable $callback): void
     {
-        $this->afterDelay($config->responseDelayMs, $callback);
+        $this->afterDelay($key, $config->responseDelayMs, $callback);
     }
 }

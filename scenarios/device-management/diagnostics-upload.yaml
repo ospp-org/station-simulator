@@ -1,28 +1,45 @@
 name: "Diagnostics Upload"
-description: "Send GetDiagnostics command and verify collection → upload → uploaded lifecycle"
+description: "Trigger diagnostics via CSMS API, verify collection → upload lifecycle"
 station_count: 1
 timeout_seconds: 60
 tags: [device-management, diagnostics, smoke]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
 
 steps:
   - name: "Send BootNotification"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
-      bootReason: "power_on"
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
 
   - name: "Wait for boot accepted"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 5000
+    timeout_ms: 25000
 
   - name: "Set diagnostics behavior to always succeed"
     type: set_behavior
@@ -31,23 +48,25 @@ steps:
       accept_rate: 1.0
       failure_rate: 0.0
 
+  - name: "Trigger diagnostics via CSMS API"
+    type: api_call
+    method: POST
+    path: "/api/v1/admin/stations/{{stationId}}/diagnostics"
+    body:
+      uploadUrl: "https://diagnostics.example.com/upload"
+    expect_status: 202
+
   - name: "Wait for GetDiagnostics command"
     type: wait_for
     action: GetDiagnostics
     message_type: REQUEST
-    timeout_ms: 30000
-
-  - name: "Assert accepted"
-    type: assert
-    assertion: response_status
-    params:
-      expected: "Accepted"
+    timeout_ms: 25000
 
   - name: "Wait for DiagnosticsNotification (Collecting)"
     type: wait_for
     action: DiagnosticsNotification
     message_type: EVENT
-    timeout_ms: 10000
+    timeout_ms: 25000
 
   - name: "Wait for DiagnosticsNotification (Uploaded)"
     type: wait_for

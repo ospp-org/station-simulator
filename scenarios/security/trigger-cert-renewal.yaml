@@ -1,0 +1,81 @@
+name: "Trigger Certificate Renewal"
+description: "Trigger cert renewal via CSMS API, verify station sends SignCertificate CSR"
+station_count: 1
+timeout_seconds: 30
+tags: [security, certificate]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
+
+steps:
+  - name: "Send BootNotification"
+    type: send
+    action: BootNotification
+    message_type: request
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "AcmeCorp"
+      serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
+      bayCount: 4
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
+
+  - name: "Wait for boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 25000
+
+  - name: "Trigger certificate renewal via CSMS API"
+    type: api_call
+    method: POST
+    path: "/api/v1/admin/stations/{{stationId}}/trigger-cert-renewal"
+    body:
+      certificateType: "StationCertificate"
+    expect_status: 202
+
+  - name: "Wait for TriggerCertificateRenewal command"
+    type: wait_for
+    action: TriggerCertificateRenewal
+    message_type: REQUEST
+    timeout_ms: 25000
+
+  - name: "Wait for TriggerCertificateRenewal response"
+    type: wait_for
+    action: TriggerCertificateRenewal
+    message_type: RESPONSE
+    timeout_ms: 25000
+
+  - name: "Assert accepted"
+    type: assert
+    assertion: response_status
+    params:
+      expected: "Accepted"
+
+  - name: "Wait for SignCertificate request from station"
+    type: wait_for
+    action: SignCertificate
+    message_type: REQUEST
+    timeout_ms: 25000
+
+  - name: "Assert SignCertificate was sent"
+    type: assert
+    assertion: message_received
+    params:
+      action: "SignCertificate"
+      message_type: "REQUEST"

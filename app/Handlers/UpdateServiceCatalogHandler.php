@@ -35,7 +35,7 @@ final class UpdateServiceCatalogHandler
         $config = AutoResponderConfig::fromArray('update_service_catalog', $behaviorConfig);
         $delayRange = $behaviorConfig['response_delay_ms'] ?? [100, 300];
 
-        $this->delay->afterDelay($delayRange, function () use ($station, $envelope, $config, $services): void {
+        $this->delay->afterDelay("update-catalog:{$stationId}", $delayRange, function () use ($station, $envelope, $config, $services): void {
             $decision = $this->decider->decide($config);
 
             if ($decision !== ResponseDecision::ACCEPTED) {

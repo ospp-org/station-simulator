@@ -8,7 +8,7 @@ use Ospp\Protocol\Enums\BayStatus;
 
 final class SimulatedStation
 {
-    public readonly StationIdentity $identity;
+    public StationIdentity $identity;
     public readonly StationConfig $config;
     public readonly StationState $state;
 
@@ -29,9 +29,9 @@ final class SimulatedStation
         $this->initializeBays();
     }
 
-    public static function create(StationConfig $config, int $index): self
+    public static function create(StationConfig $config, int $index, ?string $stationId = null): self
     {
-        $identity = StationIdentity::fromConfig($config, $index);
+        $identity = StationIdentity::fromConfig($config, $index, $stationId);
 
         return new self($identity, $config);
     }

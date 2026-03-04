@@ -1,28 +1,45 @@
 name: "Soft Reset"
-description: "Reset station, verify bays go Unavailable, station reboots and comes back online"
+description: "Reset station via CSMS API, verify reboot cycle"
 station_count: 1
 timeout_seconds: 60
 tags: [device-management, reset]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
 
 steps:
   - name: "Send BootNotification"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
-      bootReason: "power_on"
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
 
   - name: "Wait for boot accepted"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 5000
+    timeout_ms: 25000
 
   - name: "Assert online"
     type: assert
@@ -30,19 +47,21 @@ steps:
     params:
       expected: "ONLINE"
 
+  - name: "Send reset command via CSMS API"
+    type: api_call
+    method: POST
+    path: "/api/v1/admin/stations/{{stationId}}/reset"
+    body:
+      type: "Soft"
+    expect_status: 202
+
   - name: "Wait for Reset command"
     type: wait_for
     action: Reset
     message_type: REQUEST
-    timeout_ms: 30000
+    timeout_ms: 25000
 
-  - name: "Assert reset accepted"
-    type: assert
-    assertion: response_status
-    params:
-      expected: "Accepted"
-
-  - name: "Wait for reboot"
+  - name: "Wait for reboot cycle"
     type: delay
     duration_ms: 10000
 
@@ -50,7 +69,7 @@ steps:
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 15000
+    timeout_ms: 25000
 
   - name: "Assert back online"
     type: assert

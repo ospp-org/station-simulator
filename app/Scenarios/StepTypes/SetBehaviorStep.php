@@ -26,13 +26,7 @@ final class SetBehaviorStep implements StepInterface
 
         // Modify behavior config at runtime
         $currentBehavior = $station->config->behavior[$action] ?? [];
-        $mergedBehavior = array_merge($currentBehavior, $changes);
-
-        // StationConfig->behavior is readonly, so we need to update via reflection
-        $reflection = new \ReflectionProperty($station->config, 'behavior');
-        $behavior = $station->config->behavior;
-        $behavior[$action] = $mergedBehavior;
-        $reflection->setValue($station->config, $behavior);
+        $station->config->behavior[$action] = array_merge($currentBehavior, $changes);
 
         $changedKeys = implode(', ', array_keys($changes));
         $this->lastMessage = "Updated behavior for {$action}: {$changedKeys}";

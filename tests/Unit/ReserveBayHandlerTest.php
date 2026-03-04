@@ -63,7 +63,8 @@ final class ReserveBayHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3005 && $p['status'] === 'Rejected');
+            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3005 && $p['status'] === 'Rejected')
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }
@@ -78,7 +79,8 @@ final class ReserveBayHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3014);
+            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3014)
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }
@@ -93,7 +95,8 @@ final class ReserveBayHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3014);
+            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3014)
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }
@@ -108,7 +111,8 @@ final class ReserveBayHandlerTest extends TestCase
 
         $this->sender->shouldReceive('sendResponse')
             ->once()
-            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3014);
+            ->withArgs(fn ($s, $a, $p) => $p['errorCode'] === 3014)
+            ->andReturn($envelope);
 
         ($this->handler)($station, $envelope);
     }

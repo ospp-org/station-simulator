@@ -1,40 +1,69 @@
 name: "Session Timeout"
-description: "Start a session and let it timeout based on max duration, verify auto-stop"
+description: "Start a session via CSMS API and let it timeout, verify auto-stop"
 station_count: 1
 timeout_seconds: 120
 tags: [session, timeout]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
 
 steps:
   - name: "Send BootNotification"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
-      bootReason: "power_on"
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
 
   - name: "Wait for boot accepted"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 5000
+    timeout_ms: 25000
 
   - name: "Wait for StatusNotification"
     type: wait_for
     action: StatusNotification
     message_type: EVENT
-    timeout_ms: 3000
+    timeout_ms: 5000
+
+  - name: "Start short session via CSMS API (60s)"
+    type: api_call
+    method: POST
+    path: "/api/v1/sessions/start"
+    body:
+      bay_id: "{{bayId_1}}"
+      service_id: "{{serviceId_1}}"
+      duration_seconds: 60
+    expect_status: 201
+    capture:
+      session_id: "data.id"
 
   - name: "Wait for StartService command"
     type: wait_for
     action: StartService
     message_type: REQUEST
-    timeout_ms: 30000
+    timeout_ms: 25000
 
   - name: "Assert session active"
     type: assert

@@ -17,7 +17,7 @@ case "$CMD" in
       ${JUNIT_OUTPUT:+--junit-output="$JUNIT_OUTPUT"} \
       ${JSON_OUTPUT:+--json-output="$JSON_OUTPUT"} \
       ${EXIT_CODE:+--exit-code} \
-      --verbose
+      -v
     ;;
   dashboard)
     exec php /app/simulator dashboard \

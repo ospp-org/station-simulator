@@ -36,7 +36,6 @@ final class CancelReservationHandler
         if ($bay === null) {
             $this->sender->sendResponse($station, OsppAction::CANCEL_RESERVATION, [
                 'status' => 'Rejected',
-                'stationId' => $station->getStationId(),
                 'errorCode' => 3012,
                 'errorText' => 'Reservation not found',
             ], $envelope);
@@ -47,7 +46,6 @@ final class CancelReservationHandler
         if ($bay->status !== BayStatus::RESERVED) {
             $this->sender->sendResponse($station, OsppAction::CANCEL_RESERVATION, [
                 'status' => 'Rejected',
-                'stationId' => $station->getStationId(),
                 'errorCode' => 3013,
                 'errorText' => 'Reservation expired',
             ], $envelope);
@@ -55,9 +53,15 @@ final class CancelReservationHandler
             return;
         }
 
-        $this->delay->afterConfigDelay($config, function () use (
+        $stationId = $station->getStationId();
+        $this->delay->afterConfigDelay("cancel-reservation:{$stationId}:{$bay->bayId}", $config, function () use (
             $station, $envelope, $bay, $reservationId,
         ): void {
+            // TOCTOU guard: re-check bay status inside async callback
+            if ($bay->status !== BayStatus::RESERVED || $bay->currentReservationId !== $reservationId) {
+                return;
+            }
+
             // Cancel expiration timer
             $this->timers->cancelTimer("reservation-expire:{$bay->bayId}");
 
@@ -69,9 +73,6 @@ final class CancelReservationHandler
 
             $this->sender->sendResponse($station, OsppAction::CANCEL_RESERVATION, [
                 'status' => 'Accepted',
-                'stationId' => $station->getStationId(),
-                'bayId' => $bay->bayId,
-                'reservationId' => $reservationId,
             ], $envelope);
         });
     }

@@ -1,47 +1,71 @@
 name: "Reserve and Cancel"
-description: "Reserve a bay, then cancel the reservation, verify bay returns to Available"
+description: "Reserve a bay via CSMS API, then cancel the reservation"
 station_count: 1
-timeout_seconds: 30
+timeout_seconds: 90
 tags: [reservation, cancel]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
 
 steps:
   - name: "Send BootNotification"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
-      bootReason: "power_on"
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
 
   - name: "Wait for boot accepted"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 5000
+    timeout_ms: 25000
 
-  - name: "Wait for StatusNotification"
-    type: wait_for
-    action: StatusNotification
-    message_type: EVENT
-    timeout_ms: 3000
+  - name: "Wait for boot to complete and bays to report"
+    type: delay
+    duration_ms: 2000
 
-  - name: "Assert bay 1 available"
-    type: assert
-    assertion: bay_status
-    params:
-      bay_number: 1
-      expected: "Available"
+  - name: "Reserve bay via CSMS API"
+    type: api_call
+    method: POST
+    path: "/api/v1/reservations"
+    body:
+      bay_id: "{{bayId_1}}"
+      duration_minutes: 5
+      session_source: "MobileApp"
+    expect_status: 201
+    capture:
+      reservation_id: "data.id"
 
-  - name: "Wait for ReserveBay"
+  - name: "Wait for ReserveBay command"
     type: wait_for
     action: ReserveBay
     message_type: REQUEST
-    timeout_ms: 30000
+    timeout_ms: 25000
+
+  - name: "Wait for handler to process"
+    type: delay
+    duration_ms: 500
 
   - name: "Assert bay reserved"
     type: assert
@@ -50,11 +74,27 @@ steps:
       bay_number: 1
       expected: "Reserved"
 
-  - name: "Wait for CancelReservation"
+  - name: "Wait for CSMS to confirm reservation via MQTT response"
+    type: delay
+    duration_ms: 10000
+
+  - name: "Cancel reservation via CSMS API"
+    type: api_call
+    method: POST
+    path: "/api/v1/reservations/{{captured.reservation_id}}/cancel"
+    expect_status: 200
+    retry_max_attempts: 10
+    retry_interval_ms: 2000
+
+  - name: "Wait for CancelReservation command"
     type: wait_for
     action: CancelReservation
     message_type: REQUEST
-    timeout_ms: 30000
+    timeout_ms: 25000
+
+  - name: "Wait for handler to process"
+    type: delay
+    duration_ms: 500
 
   - name: "Assert bay available again"
     type: assert

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Scenarios;
 
 use App\Scenarios\Results\StepResult;
+use App\Scenarios\StepTypes\ApiCallStep;
 use App\Scenarios\StepTypes\AssertStep;
 use App\Scenarios\StepTypes\DelayStep;
 use App\Scenarios\StepTypes\DisconnectStep;
@@ -31,6 +32,7 @@ final class StepExecutor
         SetBehaviorStep $setBehavior,
         DisconnectStep $disconnect,
         FaultStep $fault,
+        ApiCallStep $apiCall,
     ) {
         $this->stepTypes = [
             'send' => $send,
@@ -42,6 +44,7 @@ final class StepExecutor
             'set_behavior' => $setBehavior,
             'disconnect' => $disconnect,
             'fault' => $fault,
+            'api_call' => $apiCall,
         ];
     }
 

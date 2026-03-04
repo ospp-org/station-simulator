@@ -14,15 +14,35 @@ final class NoErrorsAssertion implements AssertionInterface
     {
         $errorMessages = array_filter(
             $context->receivedMessages,
-            fn ($e) => isset($e->payload['errorCode']) || isset($e->payload['status']) && $e->payload['status'] === 'Rejected',
+            function ($e) {
+                // Check for non-null, non-zero errorCode
+                if (isset($e->payload['errorCode']) && $e->payload['errorCode'] !== null && $e->payload['errorCode'] !== 0) {
+                    return true;
+                }
+
+                // Check for Rejected status
+                if (isset($e->payload['status']) && $e->payload['status'] === 'Rejected') {
+                    return true;
+                }
+
+                return false;
+            },
         );
 
         if (count($errorMessages) === 0) {
-            $this->lastMessage = "No error messages found";
+            $this->lastMessage = 'No error messages found';
+
             return true;
         }
 
-        $this->lastMessage = count($errorMessages) . " error message(s) found";
+        // Show details of error messages for debugging
+        $details = [];
+        foreach ($errorMessages as $e) {
+            $details[] = $e->action . '(' . $e->messageType->value . ')';
+        }
+
+        $this->lastMessage = count($errorMessages) . ' error(s): ' . implode(', ', $details);
+
         return false;
     }
 

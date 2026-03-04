@@ -1,28 +1,39 @@
 name: "Station Offline Recovery"
-description: "Boot, go online, disconnect, reconnect, re-boot successfully"
+description: "Boot, go online, disconnect (triggers ConnectionLost LWT), reconnect, re-boot"
 station_count: 1
 timeout_seconds: 60
-tags: [core, connectivity, recovery]
+tags: [core, connectivity, recovery, lwt]
 
 steps:
   - name: "Send BootNotification"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
-      bootReason: "power_on"
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
 
   - name: "Wait for boot accepted"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 5000
+    timeout_ms: 25000
 
   - name: "Assert online"
     type: assert
@@ -30,9 +41,9 @@ steps:
     params:
       expected: "ONLINE"
 
-  - name: "Simulate disconnect"
+  - name: "Simulate disconnect (triggers LWT)"
     type: disconnect
-    station: "{{stationId}}"
+    station: 1
     reconnect_delay_ms: 3000
 
   - name: "Assert offline"
@@ -48,21 +59,32 @@ steps:
   - name: "Send new BootNotification after reconnect"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
       bootReason: "ErrorRecovery"
 
   - name: "Wait for re-boot accepted"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 10000
+    timeout_ms: 25000
 
   - name: "Assert back online"
     type: assert

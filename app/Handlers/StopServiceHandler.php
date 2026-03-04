@@ -10,6 +10,7 @@ use App\AutoResponder\ResponseDecider;
 use App\Generators\MeterValueGenerator;
 use App\Logging\ColoredConsoleOutput;
 use App\Mqtt\MessageSender;
+use App\Services\StatusNotificationService;
 use App\StateMachines\SimulatedBayFSM;
 use App\StateMachines\SimulatedSessionFSM;
 use App\Station\SimulatedStation;
@@ -29,6 +30,7 @@ final class StopServiceHandler
         private readonly DelaySimulator $delay,
         private readonly TimerManager $timers,
         private readonly MeterValueGenerator $meterGenerator,
+        private readonly StatusNotificationService $statusService,
         private readonly ColoredConsoleOutput $output,
     ) {}
 
@@ -62,9 +64,18 @@ final class StopServiceHandler
             return;
         }
 
-        $this->delay->afterConfigDelay($config, function () use (
-            $station, $envelope, $bay, $bayId, $sessionId,
+        $stationId = $station->getStationId();
+        $this->delay->afterConfigDelay("stop-service:{$stationId}:{$bayId}", $config, function () use (
+            $station, $envelope, $bay, $bayId, $sessionId, $stationId,
         ): void {
+            // TOCTOU guard: re-check bay status inside async callback
+            if ($bay->status !== BayStatus::OCCUPIED) {
+                return;
+            }
+            if ($bay->currentSessionId !== $sessionId) {
+                return;
+            }
+
             // Stop meter timer
             $this->timers->cancelTimer("meter:{$bayId}");
             $this->timers->cancelTimer("session-timeout:{$bayId}");
@@ -100,13 +111,20 @@ final class StopServiceHandler
             // Send accept response
             $this->sender->sendResponse($station, OsppAction::STOP_SERVICE, [
                 'status' => 'Accepted',
+            ], $envelope);
+
+            // Send TransactionEvent with session summary
+            $this->sender->sendEvent($station, OsppAction::TRANSACTION_EVENT, [
                 'stationId' => $station->getStationId(),
                 'bayId' => $bayId,
                 'sessionId' => $sessionId,
-                'actualDurationSeconds' => $durationSeconds,
+                'serviceId' => $serviceId,
+                'eventType' => 'Ended',
+                'durationSeconds' => $durationSeconds,
                 'creditsCharged' => $creditsCharged,
                 'meterValues' => $meterPayload['values'] ?? [],
-            ], $envelope);
+                'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
+            ]);
 
             $this->sessionFSM->transition($bayId, SessionStatus::COMPLETED);
 
@@ -120,11 +138,12 @@ final class StopServiceHandler
 
             // Cleanup delay (2-5s) → Finishing → Available
             $cleanupDelay = random_int(2000, 5000) / 1000;
-            $this->delay->afterDelay([(int) ($cleanupDelay * 1000), (int) ($cleanupDelay * 1000)], function () use (
+            $this->delay->afterDelay("stop-cleanup:{$stationId}:{$bayId}", [(int) ($cleanupDelay * 1000), (int) ($cleanupDelay * 1000)], function () use (
                 $station, $bay, $bayId,
             ): void {
                 $bay->endSession();
                 $this->bayFSM->transition($station, $bay, BayStatus::AVAILABLE);
+                $this->statusService->sendForBay($station, $bay);
                 $this->output->bay("Bay {$bayId} returned to Available");
             });
         });
@@ -140,8 +159,6 @@ final class StopServiceHandler
 
         $this->sender->sendResponse($station, OsppAction::STOP_SERVICE, [
             'status' => 'Rejected',
-            'stationId' => $station->getStationId(),
-            'bayId' => $envelope->payload['bayId'] ?? '',
             'errorCode' => $errorCode,
             'errorText' => $errorText,
         ], $envelope);

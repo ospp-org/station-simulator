@@ -33,23 +33,29 @@ final class SetMaintenanceModeHandler
 
         $this->output->config("SetMaintenanceMode for {$stationId} bay {$bayId}: " . ($enabled ? 'enabled' : 'disabled'));
 
-        $bay = $station->getBay($bayId);
+        // Determine target bays: specific bay or all bays
+        $targetBays = [];
+        if ($bayId !== '') {
+            $bay = $station->getBay($bayId);
+            if ($bay === null) {
+                $this->sender->sendResponse($station, OsppAction::SET_MAINTENANCE_MODE, [
+                    'status' => 'Rejected',
+                    'errorCode' => 3005,
+                    'errorText' => 'Bay not found',
+                ], $envelope);
 
-        if ($bay === null) {
-            $this->sender->sendResponse($station, OsppAction::SET_MAINTENANCE_MODE, [
-                'status' => 'Rejected',
-                'errorCode' => 3005,
-                'errorText' => 'Bay not found',
-            ], $envelope);
-
-            return;
+                return;
+            }
+            $targetBays = [$bay];
+        } else {
+            $targetBays = array_values($station->getBays());
         }
 
         $behaviorConfig = $station->config->getBehaviorFor('set_maintenance_mode') ?? [];
         $config = AutoResponderConfig::fromArray('set_maintenance_mode', $behaviorConfig);
         $delayRange = $behaviorConfig['response_delay_ms'] ?? [100, 300];
 
-        $this->delay->afterDelay($delayRange, function () use ($station, $envelope, $config, $bay, $enabled): void {
+        $this->delay->afterDelay("set-maintenance:{$stationId}", $delayRange, function () use ($station, $envelope, $config, $targetBays, $enabled, $bayId): void {
             $decision = $this->decider->decide($config);
 
             if ($decision !== ResponseDecision::ACCEPTED) {
@@ -61,26 +67,27 @@ final class SetMaintenanceModeHandler
             }
 
             $newStatus = $enabled ? BayStatus::UNAVAILABLE : BayStatus::AVAILABLE;
-            $bay->transitionTo($newStatus);
+
+            foreach ($targetBays as $bay) {
+                $bay->transitionTo($newStatus);
+
+                $this->sender->sendEvent($station, OsppAction::STATUS_NOTIFICATION, [
+                    'stationId' => $station->getStationId(),
+                    'bayId' => $bay->bayId,
+                    'bayNumber' => $bay->bayNumber,
+                    'status' => $newStatus->toOspp(),
+                    'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
+                ]);
+
+                $station->emit('bay.statusChanged', [
+                    'bayId' => $bay->bayId,
+                    'status' => $newStatus->value,
+                ]);
+            }
 
             $this->sender->sendResponse($station, OsppAction::SET_MAINTENANCE_MODE, [
                 'status' => 'Accepted',
-                'bayId' => $bay->bayId,
-                'maintenanceMode' => $enabled,
             ], $envelope);
-
-            $this->sender->sendEvent($station, OsppAction::STATUS_NOTIFICATION, [
-                'stationId' => $station->getStationId(),
-                'bayId' => $bay->bayId,
-                'bayNumber' => $bay->bayNumber,
-                'status' => $newStatus->toOspp(),
-                'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
-            ]);
-
-            $station->emit('bay.statusChanged', [
-                'bayId' => $bay->bayId,
-                'status' => $newStatus->value,
-            ]);
         });
     }
 }

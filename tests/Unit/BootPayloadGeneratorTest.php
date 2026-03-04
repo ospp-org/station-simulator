@@ -37,7 +37,6 @@ final class BootPayloadGeneratorTest extends TestCase
         $this->assertArrayHasKey('networkInfo', $payload);
         $this->assertArrayHasKey('timezone', $payload);
         $this->assertArrayHasKey('bootReason', $payload);
-        $this->assertArrayHasKey('bays', $payload);
     }
 
     public function test_station_identity_fields(): void
@@ -58,7 +57,6 @@ final class BootPayloadGeneratorTest extends TestCase
         $payload = $this->generator->generate($station);
 
         $this->assertSame(2, $payload['bayCount']);
-        $this->assertCount(2, $payload['bays']);
     }
 
     public function test_capabilities_structure(): void
@@ -86,7 +84,7 @@ final class BootPayloadGeneratorTest extends TestCase
         $net = $payload['networkInfo'];
         $this->assertArrayHasKey('connectionType', $net);
         $this->assertArrayHasKey('signalStrength', $net);
-        $this->assertSame('ethernet', $net['connectionType']);
+        $this->assertSame('Ethernet', $net['connectionType']);
         $this->assertNull($net['signalStrength']);
     }
 
@@ -104,40 +102,6 @@ final class BootPayloadGeneratorTest extends TestCase
         $payload = $this->generator->generate($station);
 
         $this->assertSame(BootReason::POWER_ON, $payload['bootReason']);
-    }
-
-    public function test_bays_contain_required_fields(): void
-    {
-        $station = $this->makeStation();
-        $payload = $this->generator->generate($station);
-
-        $bay = $payload['bays'][0];
-        $this->assertArrayHasKey('bayId', $bay);
-        $this->assertArrayHasKey('bayNumber', $bay);
-        $this->assertArrayHasKey('status', $bay);
-        $this->assertArrayHasKey('services', $bay);
-
-        $this->assertSame('Available', $bay['status']);
-    }
-
-    public function test_bay_services_included(): void
-    {
-        $station = $this->makeStation();
-        $payload = $this->generator->generate($station);
-
-        $bay = $payload['bays'][0];
-        $this->assertCount(2, $bay['services']);
-
-        $svc = $bay['services'][0];
-        $this->assertArrayHasKey('serviceId', $svc);
-        $this->assertArrayHasKey('serviceName', $svc);
-        $this->assertArrayHasKey('pricingType', $svc);
-        $this->assertArrayHasKey('priceCreditsFixed', $svc);
-        $this->assertArrayHasKey('priceCreditsPerMinute', $svc);
-        $this->assertArrayHasKey('available', $svc);
-
-        $this->assertSame('wash_basic', $svc['serviceId']);
-        $this->assertSame('Basic Wash', $svc['serviceName']);
     }
 
     public function test_custom_boot_reason(): void

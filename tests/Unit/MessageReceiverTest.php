@@ -62,15 +62,18 @@ final class MessageReceiverTest extends TestCase
         $this->receiver->handleMessage('SIM-001', '{invalid json!!}');
     }
 
-    public function test_unknown_station_logs_warning(): void
+    public function test_unknown_station_is_silently_ignored(): void
     {
         $this->receiver->setStations([]);
 
-        $this->output->shouldReceive('warning')
-            ->once()
-            ->withArgs(fn (string $msg) => str_contains($msg, 'unknown station'));
+        $routeCount = 0;
+        $this->receiver->setCommandRouter(function () use (&$routeCount): void {
+            $routeCount++;
+        });
 
         $this->receiver->handleMessage('UNKNOWN-001', $this->makeValidJson());
+
+        $this->assertSame(0, $routeCount);
     }
 
     public function test_qos1_dedup_skips_duplicate_message_id(): void
@@ -142,7 +145,7 @@ final class MessageReceiverTest extends TestCase
 
         $this->assertNotNull($emitted);
         $this->assertSame(OsppAction::START_SERVICE, $emitted['action']);
-        $this->assertSame('REQUEST', $emitted['messageType']);
+        $this->assertSame('Request', $emitted['messageType']);
     }
 
     public function test_logger_records_inbound(): void
@@ -193,8 +196,8 @@ final class MessageReceiverTest extends TestCase
             'messageType' => MessageType::REQUEST->value,
             'action' => OsppAction::START_SERVICE,
             'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
-            'source' => 'csms',
-            'protocolVersion' => '1.0.0',
+            'source' => 'Server',
+            'protocolVersion' => '0.1.0',
             'payload' => ['bayId' => 'bay_1', 'sessionId' => 'sess_1'],
         ], JSON_THROW_ON_ERROR);
     }

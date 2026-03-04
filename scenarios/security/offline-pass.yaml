@@ -1,0 +1,101 @@
+name: "Offline Pass Authorization"
+description: "Issue an offline pass via CSMS API, then send AuthorizeOfflinePass via MQTT"
+station_count: 1
+timeout_seconds: 30
+tags: [security, offline, authorization]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
+
+steps:
+  - name: "Send BootNotification"
+    type: send
+    action: BootNotification
+    message_type: request
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "AcmeCorp"
+      serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
+      bayCount: 4
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
+
+  - name: "Wait for boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 25000
+
+  - name: "Assert boot accepted"
+    type: assert
+    assertion: response_status
+    params:
+      expected: "Accepted"
+
+  - name: "Issue offline pass via CSMS API"
+    type: api_call
+    method: POST
+    path: "/api/v1/offline/passes"
+    body:
+      deviceId: "dev_test_sim_001"
+      stationIds:
+        - "{{stationId}}"
+      serviceIds:
+        - "{{serviceId_1}}"
+      maxUses: 10
+      maxTotalCredits: 5000
+      durationHours: 24
+    expect_status: 201
+    capture:
+      pass_id: "data.id"
+      offline_pass: "data.attributes"
+
+  - name: "Send AuthorizeOfflinePass"
+    type: send
+    action: AuthorizeOfflinePass
+    message_type: REQUEST
+    payload:
+      offlinePassId: "{{captured.pass_id}}"
+      offlinePass: "{{captured.offline_pass}}"
+      deviceId: "dev_test_sim_001"
+      counter: 1
+      bayId: "{{bayId_1}}"
+      serviceId: "{{serviceId_1}}"
+
+  - name: "Wait for authorization response"
+    type: wait_for
+    action: AuthorizeOfflinePass
+    message_type: RESPONSE
+    timeout_ms: 25000
+
+  - name: "Assert response received"
+    type: assert
+    assertion: message_received
+    params:
+      action: "AuthorizeOfflinePass"
+      message_type: "RESPONSE"
+
+  - name: "Assert response has status"
+    type: assert
+    assertion: payload_field
+    params:
+      field: "status"
+
+  - name: "Assert no errors"
+    type: assert
+    assertion: no_errors

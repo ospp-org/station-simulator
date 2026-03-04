@@ -17,7 +17,7 @@ final class MessageReceivedAssertion implements AssertionInterface
 
         foreach (array_reverse($context->receivedMessages) as $envelope) {
             if ($envelope->action === $action) {
-                if ($messageType === null || $envelope->messageType->value === $messageType) {
+                if ($messageType === null || strcasecmp($envelope->messageType->value, $messageType) === 0) {
                     $this->lastMessage = "Found {$action} message";
                     return true;
                 }

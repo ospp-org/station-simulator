@@ -32,6 +32,7 @@ final class MessageSenderTest extends TestCase
     protected function setUp(): void
     {
         $this->mqtt = Mockery::mock(MqttConnectionManager::class);
+        $this->mqtt->shouldReceive('pollOnce')->zeroOrMoreTimes();
         $this->logger = new MessageLogger();
         $this->sender = new MessageSender($this->mqtt, $this->logger);
     }
@@ -47,8 +48,8 @@ final class MessageSenderTest extends TestCase
 
                 return $stationId === 'SIM-001'
                     && $data['action'] === OsppAction::BOOT_NOTIFICATION
-                    && $data['messageType'] === 'REQUEST'
-                    && $data['source'] === 'station'
+                    && $data['messageType'] === 'Request'
+                    && $data['source'] === 'Station'
                     && isset($data['messageId'])
                     && isset($data['protocolVersion'])
                     && isset($data['timestamp'])
@@ -88,7 +89,7 @@ final class MessageSenderTest extends TestCase
             messageType: MessageType::REQUEST,
             action: OsppAction::START_SERVICE,
             timestamp: new \DateTimeImmutable(),
-            source: 'csms',
+            source: 'Server',
             protocolVersion: ProtocolVersion::default(),
             payload: ['bayId' => 'bay_1'],
         );
@@ -179,7 +180,7 @@ final class MessageSenderTest extends TestCase
 
         $this->assertNotNull($emitted);
         $this->assertSame(OsppAction::HEARTBEAT, $emitted['action']);
-        $this->assertSame('REQUEST', $emitted['messageType']);
+        $this->assertSame('Request', $emitted['messageType']);
         $this->assertArrayHasKey('messageId', $emitted);
     }
 

@@ -39,11 +39,27 @@ final class ResetHandler
 
         $this->output->reset("Reset for {$stationId}: {$resetType}");
 
+        // Guard: only accept reset when station is ONLINE
+        if ($station->state->lifecycle !== StationState::LIFECYCLE_ONLINE) {
+            $this->sender->sendResponse($station, OsppAction::RESET, [
+                'status' => 'Rejected',
+                'errorCode' => 3020,
+                'errorText' => 'Station not in resetable state',
+            ], $envelope);
+
+            return;
+        }
+
         $behaviorConfig = $station->config->getBehaviorFor('reset') ?? [];
         $config = AutoResponderConfig::fromArray('reset', $behaviorConfig);
         $delayRange = $behaviorConfig['response_delay_ms'] ?? [200, 1000];
 
-        $this->delay->afterDelay($delayRange, function () use ($station, $envelope, $config, $resetType, $behaviorConfig): void {
+        $this->delay->afterDelay("reset:{$stationId}", $delayRange, function () use ($station, $envelope, $config, $resetType, $behaviorConfig): void {
+            // TOCTOU guard: re-check state inside async callback
+            if ($station->state->lifecycle !== StationState::LIFECYCLE_ONLINE) {
+                return;
+            }
+
             $decision = $this->decider->decide($config);
 
             if ($decision !== ResponseDecision::ACCEPTED) {

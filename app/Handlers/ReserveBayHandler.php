@@ -52,7 +52,8 @@ final class ReserveBayHandler
 
         $decision = $this->decider->decide($config);
 
-        $this->delay->afterConfigDelay($config, function () use (
+        $stationId = $station->getStationId();
+        $this->delay->afterConfigDelay("reserve-bay:{$stationId}:{$bayId}", $config, function () use (
             $station, $envelope, $bay, $bayId, $reservationId, $ttlMinutes, $decision, $config,
         ): void {
             if ($decision !== ResponseDecision::ACCEPTED) {
@@ -66,6 +67,22 @@ final class ReserveBayHandler
                 return;
             }
 
+            // TOCTOU guard: re-check bay status inside async callback
+            if ($bay->status === BayStatus::RESERVED && $bay->currentReservationId === $reservationId) {
+                // Idempotent: same reservation already set, re-send Accepted
+                $this->sender->sendResponse($station, OsppAction::RESERVE_BAY, [
+                    'status' => 'Accepted',
+                ], $envelope);
+
+                return;
+            }
+
+            if (! $bay->status->canReserve()) {
+                $this->sendReject($station, $envelope, 3014, 'Bay not available for reservation');
+
+                return;
+            }
+
             // Accept: transition bay, set reservation
             $this->bayFSM->transition($station, $bay, BayStatus::RESERVED);
             $bay->setReservation($reservationId);
@@ -74,9 +91,6 @@ final class ReserveBayHandler
 
             $this->sender->sendResponse($station, OsppAction::RESERVE_BAY, [
                 'status' => 'Accepted',
-                'stationId' => $station->getStationId(),
-                'bayId' => $bayId,
-                'reservationId' => $reservationId,
             ], $envelope);
 
             // Start expiration timer
@@ -110,8 +124,6 @@ final class ReserveBayHandler
     ): void {
         $this->sender->sendResponse($station, OsppAction::RESERVE_BAY, [
             'status' => 'Rejected',
-            'stationId' => $station->getStationId(),
-            'bayId' => $envelope->payload['bayId'] ?? '',
             'errorCode' => $errorCode,
             'errorText' => $errorText,
         ], $envelope);

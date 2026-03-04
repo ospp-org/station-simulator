@@ -2,13 +2,14 @@ FROM composer:2 AS deps
 
 WORKDIR /app
 COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --ignore-platform-req=php
+
 COPY . .
-RUN composer install --no-dev --optimize-autoloader --ignore-platform-req=php
+RUN composer dump-autoload --optimize
 
-FROM php:8.3-cli-alpine
+FROM php:8.4-cli-alpine
 
-RUN apk add --no-cache \
-    openssl \
+RUN apk add --no-cache openssl \
     && docker-php-ext-install pcntl
 
 WORKDIR /app

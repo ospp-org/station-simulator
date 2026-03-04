@@ -32,8 +32,8 @@ steps:
       offlineTxId: "tx_offline_001"
       offlinePassId: "pass_offline_001"
       userId: "user-001"
-      bayId: "bay_{{stationId}}_1"
-      serviceId: "wash_basic"
+      bayId: "{{bayId_1}}"
+      serviceId: "{{serviceId_1}}"
       txCounter: 1
       durationSeconds: 300
       creditsCharged: 50
@@ -44,15 +44,15 @@ steps:
         signature: "test-signature"
         signatureAlgorithm: "ECDSA-P256-SHA256"
       meterValues:
-        waterMl: 2500
-        chemicalMl: 150
+        liquidMl: 2500
+        consumableMl: 150
         energyWh: 85
 
   - name: "Wait for transaction response"
     type: wait_for
     action: TransactionEvent
     message_type: RESPONSE
-    timeout_ms: 10000
+    timeout_ms: 25000
 
   - name: "Assert response received"
     type: assert

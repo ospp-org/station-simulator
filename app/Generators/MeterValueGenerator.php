@@ -29,8 +29,8 @@ final class MeterValueGenerator
         $intervalSeconds = $config->getMeterIntervalSeconds();
 
         // Generate consumption for this interval with jitter
-        $waterRate = $this->randomInRange($profile['water_ml_per_s'] ?? [0, 0]);
-        $chemicalRate = $this->randomInRange($profile['chemical_ml_per_s'] ?? [0, 0]);
+        $waterRate = $this->randomInRange($profile['liquid_ml_per_s'] ?? [0, 0]);
+        $chemicalRate = $this->randomInRange($profile['consumable_ml_per_s'] ?? [0, 0]);
         $energyRate = $this->randomInRange($profile['energy_wh_per_s'] ?? [0, 0]);
 
         // Apply jitter
@@ -39,8 +39,8 @@ final class MeterValueGenerator
         $energyRate = $this->applyJitter($energyRate, $jitterPercent);
 
         // Accumulate (cumulative, monotonic)
-        $bay->meterAccumulator['water_ml'] = ($bay->meterAccumulator['water_ml'] ?? 0.0) + ($waterRate * $intervalSeconds);
-        $bay->meterAccumulator['chemical_ml'] = ($bay->meterAccumulator['chemical_ml'] ?? 0.0) + ($chemicalRate * $intervalSeconds);
+        $bay->meterAccumulator['liquid_ml'] = ($bay->meterAccumulator['liquid_ml'] ?? 0.0) + ($waterRate * $intervalSeconds);
+        $bay->meterAccumulator['consumable_ml'] = ($bay->meterAccumulator['consumable_ml'] ?? 0.0) + ($chemicalRate * $intervalSeconds);
         $bay->meterAccumulator['energy_wh'] = ($bay->meterAccumulator['energy_wh'] ?? 0.0) + ($energyRate * $intervalSeconds);
 
         return $bay->meterAccumulator;
@@ -58,8 +58,8 @@ final class MeterValueGenerator
             'sessionId' => $bay->currentSessionId,
             'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
             'values' => [
-                'waterMl' => (int) ($bay->meterAccumulator['water_ml'] ?? 0.0),
-                'chemicalMl' => (int) ($bay->meterAccumulator['chemical_ml'] ?? 0.0),
+                'liquidMl' => (int) ($bay->meterAccumulator['liquid_ml'] ?? 0.0),
+                'consumableMl' => (int) ($bay->meterAccumulator['consumable_ml'] ?? 0.0),
                 'energyWh' => (int) ($bay->meterAccumulator['energy_wh'] ?? 0.0),
             ],
         ];

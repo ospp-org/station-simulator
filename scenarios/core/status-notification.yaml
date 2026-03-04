@@ -1,0 +1,67 @@
+name: "Status Notification"
+description: "Boot, send StatusNotification event, and verify bay status"
+station_count: 1
+timeout_seconds: 30
+tags: [core, status]
+
+steps:
+  - name: "Send BootNotification"
+    type: send
+    action: BootNotification
+    message_type: request
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "AcmeCorp"
+      serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
+      bayCount: 4
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
+
+  - name: "Wait for boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 25000
+
+  - name: "Send StatusNotification"
+    type: send
+    action: StatusNotification
+    message_type: event
+    payload:
+      stationId: "{{stationId}}"
+      bayStatuses:
+        - bayId: "{{bayId_1}}"
+          bayNumber: 1
+          status: "Available"
+        - bayId: "{{bayId_2}}"
+          bayNumber: 2
+          status: "Available"
+        - bayId: "{{bayId_3}}"
+          bayNumber: 3
+          status: "Available"
+        - bayId: "{{bayId_4}}"
+          bayNumber: 4
+          status: "Available"
+
+  - name: "Assert bay 1 Available"
+    type: assert
+    assertion: bay_status
+    params:
+      bay_number: 1
+      expected: "Available"
+
+  - name: "Assert no errors"
+    type: assert
+    assertion: no_errors

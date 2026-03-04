@@ -31,8 +31,19 @@ final class UpdateFirmwareHandler
         $payload = $envelope->payload;
         $firmwareUrl = $payload['firmwareUrl'] ?? '';
         $targetVersion = $payload['targetVersion'] ?? '1.3.0';
+        $signature = $payload['signature'] ?? null;
 
-        $this->output->firmware("UpdateFirmware for {$stationId}: {$targetVersion} from {$firmwareUrl}");
+        $this->output->firmware("UpdateFirmware for {$stationId}: {$targetVersion} from {$firmwareUrl} (signature: " . ($signature !== null ? 'present' : 'missing') . ')');
+
+        if ($signature === null) {
+            $this->sender->sendResponse($station, OsppAction::UPDATE_FIRMWARE, [
+                'status' => 'Rejected',
+                'errorCode' => 4003,
+                'errorText' => 'Missing firmware signature',
+            ], $envelope);
+
+            return;
+        }
 
         $behaviorConfig = $station->config->getBehaviorFor('update_firmware') ?? [];
         $config = AutoResponderConfig::fromArray('update_firmware', $behaviorConfig);

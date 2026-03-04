@@ -26,7 +26,7 @@ final class StationConfig
     public readonly array $services;
 
     /** @var array<string, array<string, mixed>> */
-    public readonly array $behavior;
+    public array $behavior;
 
     /** @var array<string, mixed> */
     public readonly array $meterValues;

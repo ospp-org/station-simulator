@@ -1,0 +1,162 @@
+name: "Reconnect Recovery"
+description: "Boot, start session, disconnect, reconnect with re-boot, verify recovery"
+station_count: 1
+timeout_seconds: 45
+tags: [core, connectivity, recovery, session]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
+
+steps:
+  - name: "Send BootNotification"
+    type: send
+    action: BootNotification
+    message_type: request
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "AcmeCorp"
+      serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
+      bayCount: 4
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
+
+  - name: "Wait for boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 25000
+
+  - name: "Assert online"
+    type: assert
+    assertion: station_state
+    params:
+      expected: "ONLINE"
+
+  - name: "Assert session key received"
+    type: assert
+    assertion: payload_field
+    params:
+      field: "sessionKey"
+
+  - name: "Wait for bays to report"
+    type: delay
+    duration_ms: 2000
+
+  - name: "Start service via CSMS API"
+    type: api_call
+    method: POST
+    path: "/api/v1/sessions/start"
+    body:
+      bay_id: "{{bayId_1}}"
+      service_id: "{{serviceId_1}}"
+      duration_seconds: 300
+    expect_status: 201
+    capture:
+      session_id: "data.id"
+    retry_max_attempts: 10
+    retry_interval_ms: 2000
+
+  - name: "Wait for StartService command"
+    type: wait_for
+    action: StartService
+    message_type: REQUEST
+    timeout_ms: 25000
+
+  - name: "Wait for handler to process"
+    type: delay
+    duration_ms: 500
+
+  - name: "Assert session active on bay 1"
+    type: assert
+    assertion: session_active
+    params:
+      bay_number: 1
+      expected: true
+
+  - name: "Assert bay 1 occupied"
+    type: assert
+    assertion: bay_status
+    params:
+      bay_number: 1
+      expected: "Occupied"
+
+  - name: "Simulate disconnect"
+    type: disconnect
+    station: 1
+
+  - name: "Assert station offline"
+    type: assert
+    assertion: station_state
+    params:
+      expected: "OFFLINE"
+
+  - name: "Wait before reconnect"
+    type: delay
+    duration_ms: 5000
+
+  - name: "Reconnect with new BootNotification"
+    type: send
+    action: BootNotification
+    message_type: request
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "AcmeCorp"
+      serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
+      bayCount: 4
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "ErrorRecovery"
+
+  - name: "Wait for re-boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 25000
+
+  - name: "Assert re-boot accepted"
+    type: assert
+    assertion: response_status
+    params:
+      expected: "Accepted"
+
+  - name: "Assert new session key"
+    type: assert
+    assertion: payload_field
+    params:
+      field: "sessionKey"
+
+  - name: "Assert back online"
+    type: assert
+    assertion: station_state
+    params:
+      expected: "ONLINE"
+
+  - name: "Assert no errors"
+    type: assert
+    assertion: no_errors

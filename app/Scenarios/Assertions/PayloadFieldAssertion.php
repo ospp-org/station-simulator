@@ -13,6 +13,7 @@ final class PayloadFieldAssertion implements AssertionInterface
     public function evaluate(array $params, ScenarioContext $context): bool
     {
         $field = $params['field'] ?? '';
+        $assertExists = ! array_key_exists('value', $params);
         $expected = $params['value'] ?? null;
 
         $lastReceived = $context->lastReceivedMessage;
@@ -23,6 +24,16 @@ final class PayloadFieldAssertion implements AssertionInterface
 
         // Support dot notation: "meterValues.waterConsumptionMl"
         $actual = $this->getNestedValue($lastReceived->payload, $field);
+
+        // When no 'value' param given, assert field exists (not null)
+        if ($assertExists) {
+            if ($actual !== null) {
+                $this->lastMessage = "Payload field {$field} exists = " . json_encode($actual);
+                return true;
+            }
+            $this->lastMessage = "Expected {$field} to exist, but was null";
+            return false;
+        }
 
         if ($actual === $expected) {
             $this->lastMessage = "Payload field {$field} = " . json_encode($actual);

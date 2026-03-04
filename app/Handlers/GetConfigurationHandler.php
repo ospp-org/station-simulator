@@ -32,7 +32,7 @@ final class GetConfigurationHandler
         $config = $station->config->getBehaviorFor('get_configuration') ?? [];
         $delayRange = $config['response_delay_ms'] ?? [50, 100];
 
-        $this->delay->afterDelay($delayRange, function () use ($station, $envelope, $requestedKeys): void {
+        $this->delay->afterDelay("get-config:{$stationId}", $delayRange, function () use ($station, $envelope, $requestedKeys): void {
             $configValues = $station->state->configValues;
             $known = [];
             $unknown = [];

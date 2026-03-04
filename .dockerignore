@@ -1,0 +1,12 @@
+.git/
+.claude/
+.phpunit.cache/
+.phpunit.result.cache
+vendor/
+node_modules/
+coverage/
+results/
+keys/*.pem
+docs/PLAN.md
+*.log
+.env

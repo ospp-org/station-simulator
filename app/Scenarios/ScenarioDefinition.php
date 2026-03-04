@@ -9,6 +9,7 @@ final readonly class ScenarioDefinition
     /**
      * @param list<array<string, mixed>> $steps
      * @param list<string> $tags
+     * @param array<string, mixed> $config
      */
     public function __construct(
         public string $name,
@@ -17,6 +18,7 @@ final readonly class ScenarioDefinition
         public array $steps,
         public array $tags = [],
         public int $timeoutSeconds = 60,
+        public array $config = [],
     ) {}
 
     public function getStepCount(): int

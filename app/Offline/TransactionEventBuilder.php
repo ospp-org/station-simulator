@@ -59,8 +59,8 @@ final class TransactionEventBuilder
             'endedAt' => $endedAt,
             'receipt' => $signedReceipt,
             'meterValues' => $overrides['meterValues'] ?? [
-                'waterMl' => 2500,
-                'chemicalMl' => 150,
+                'liquidMl' => 2500,
+                'consumableMl' => 150,
                 'energyWh' => 85,
             ],
         ];

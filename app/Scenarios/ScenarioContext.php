@@ -10,6 +10,7 @@ use App\Mqtt\MqttConnectionManager;
 use App\Station\SimulatedStation;
 use App\Timers\TimerManager;
 use Ospp\Protocol\Envelope\MessageEnvelope;
+use React\EventLoop\LoopInterface;
 
 final class ScenarioContext
 {
@@ -22,11 +23,21 @@ final class ScenarioContext
     public ?MessageEnvelope $lastSentMessage = null;
     public ?MessageEnvelope $lastReceivedMessage = null;
 
+    /** @var int Cursor for WaitForStep — index to start searching from */
+    public int $waitForCursor = 0;
+
+    /** @var array<string, mixed> Captured values from api_call steps */
+    public array $captured = [];
+
+    public string $csmsBaseUrl = '';
+    public string $csmsJwtToken = '';
+
     public function __construct(
         public readonly MessageSender $sender,
         public readonly MqttConnectionManager $mqtt,
         public readonly TimerManager $timers,
         public readonly MessageLogger $logger,
+        public readonly ?LoopInterface $loop = null,
     ) {}
 
     public function getStation(int $index = 1): ?SimulatedStation

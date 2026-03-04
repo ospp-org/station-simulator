@@ -1,46 +1,77 @@
 name: "Service Catalog Update"
-description: "Send UpdateServiceCatalog with new services, verify acceptance and bay notifications"
+description: "Update service catalog via CSMS API, verify station accepts"
 station_count: 1
 timeout_seconds: 30
 tags: [device-management, services]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
 
 steps:
   - name: "Send BootNotification"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
-      bootReason: "power_on"
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
 
   - name: "Wait for boot accepted"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 5000
+    timeout_ms: 25000
+
+  - name: "Update service catalog via CSMS API"
+    type: api_call
+    method: PUT
+    path: "/api/v1/admin/stations/{{stationId}}/catalog"
+    body:
+      catalogVersion: "2.0.0"
+      services:
+        - serviceId: "svc_wash_premium"
+          serviceName: "Premium Wash"
+          pricingType: "fixed"
+          priceCreditsFixed: 100
+          available: true
+    expect_status: 202
 
   - name: "Wait for UpdateServiceCatalog command"
     type: wait_for
     action: UpdateServiceCatalog
     message_type: REQUEST
-    timeout_ms: 30000
+    timeout_ms: 25000
+
+  - name: "Wait for UpdateServiceCatalog response"
+    type: wait_for
+    action: UpdateServiceCatalog
+    message_type: RESPONSE
+    timeout_ms: 25000
 
   - name: "Assert accepted"
     type: assert
     assertion: response_status
     params:
       expected: "Accepted"
-
-  - name: "Wait for StatusNotification with updated services"
-    type: wait_for
-    action: StatusNotification
-    message_type: EVENT
-    timeout_ms: 5000
 
   - name: "Assert no errors"
     type: assert

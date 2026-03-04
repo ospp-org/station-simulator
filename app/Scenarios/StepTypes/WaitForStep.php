@@ -18,13 +18,26 @@ final class WaitForStep implements StepInterface
         $timeoutMs = (int) ($config['timeout_ms'] ?? 5000);
 
         $startTime = microtime(true);
-        $initialCount = count($context->receivedMessages);
+        $searchFrom = $context->waitForCursor;
 
         // Poll for matching message
         while ((microtime(true) - $startTime) * 1000 < $timeoutMs) {
-            foreach (array_slice($context->receivedMessages, $initialCount) as $envelope) {
+            // Pump MQTT to receive incoming messages
+            $context->mqtt->pollOnce();
+
+            // Process event loop timers (handlers use DelaySimulator which schedules timers)
+            if ($context->loop !== null) {
+                $context->loop->addTimer(0, fn () => $context->loop->stop());
+                $context->loop->run();
+            }
+
+            $messages = $context->receivedMessages;
+            for ($i = $searchFrom, $len = count($messages); $i < $len; $i++) {
+                $envelope = $messages[$i];
                 if ($envelope->action === $action) {
-                    if ($messageType === null || $envelope->messageType->value === $messageType) {
+                    if ($messageType === null || strcasecmp($envelope->messageType->value, $messageType) === 0) {
+                        $context->lastReceivedMessage = $envelope;
+                        $context->waitForCursor = $i + 1;
                         $this->lastMessage = "Received {$action} ({$envelope->messageType->value})";
 
                         return true;

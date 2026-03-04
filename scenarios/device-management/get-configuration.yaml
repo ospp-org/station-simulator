@@ -1,0 +1,56 @@
+name: "Get Configuration"
+description: "Request configuration via CSMS API, verify station responds with keys"
+station_count: 1
+timeout_seconds: 30
+tags: [device-management, configuration]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
+
+steps:
+  - name: "Send BootNotification"
+    type: send
+    action: BootNotification
+    message_type: request
+    payload:
+      stationId: "{{stationId}}"
+      firmwareVersion: "1.2.0"
+      stationModel: "SimStation"
+      stationVendor: "AcmeCorp"
+      serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
+      bayCount: 4
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
+
+  - name: "Wait for boot accepted"
+    type: wait_for
+    action: BootNotification
+    message_type: RESPONSE
+    timeout_ms: 25000
+
+  - name: "Wait for boot to complete"
+    type: delay
+    duration_ms: 2000
+
+  - name: "Get config via CSMS API"
+    type: api_call
+    method: GET
+    path: "/api/v1/admin/stations/{{stationId}}/config"
+    expect_status: 200
+
+  - name: "Assert no errors"
+    type: assert
+    assertion: no_errors

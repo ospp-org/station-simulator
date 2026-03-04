@@ -27,16 +27,16 @@ final class ChangeConfigurationHandler
     {
         $stationId = $station->getStationId();
         $payload = $envelope->payload;
-        $key = $payload['key'] ?? '';
-        $value = $payload['value'] ?? '';
+        $keys = $payload['keys'] ?? [];
 
-        $this->output->config("ChangeConfiguration for {$stationId}: {$key} = {$value}");
+        $keyNames = array_map(fn (array $entry) => $entry['key'] ?? '?', $keys);
+        $this->output->config("ChangeConfiguration for {$stationId}: " . implode(', ', $keyNames));
 
         $behaviorConfig = $station->config->getBehaviorFor('change_configuration') ?? [];
         $config = AutoResponderConfig::fromArray('change_configuration', $behaviorConfig);
         $delayRange = $behaviorConfig['response_delay_ms'] ?? [50, 150];
 
-        $this->delay->afterDelay($delayRange, function () use ($station, $envelope, $config, $key, $value): void {
+        $this->delay->afterDelay("change-config:{$stationId}", $delayRange, function () use ($station, $envelope, $config, $keys): void {
             $decision = $this->decider->decide($config);
 
             $status = match ($decision) {
@@ -47,15 +47,24 @@ final class ChangeConfigurationHandler
             };
 
             if ($decision === ResponseDecision::ACCEPTED || $decision === ResponseDecision::REBOOT_REQUIRED) {
-                $station->state->configValues[$key] = $value;
+                foreach ($keys as $entry) {
+                    $station->state->configValues[$entry['key']] = $entry['value'];
+                }
             }
+
+            $results = array_map(fn (array $entry) => [
+                'key' => $entry['key'],
+                'status' => $status,
+            ], $keys);
 
             $this->sender->sendResponse($station, OsppAction::CHANGE_CONFIGURATION, [
                 'status' => $status,
-                'key' => $key,
+                'results' => $results,
             ], $envelope);
 
-            $this->output->config("ChangeConfiguration {$key}: {$status}");
+            foreach ($keys as $entry) {
+                $this->output->config("ChangeConfiguration {$entry['key']}: {$status}");
+            }
         });
     }
 }

@@ -26,4 +26,4 @@ services:
 networks:
   csms-network:
     external: true
-    name: ${CSMS_NETWORK:-csms-network}
+    name: ${CSMS_NETWORK:-csms-server_csms-network}

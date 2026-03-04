@@ -1,40 +1,71 @@
 name: "Reserve Bay and Start Session"
-description: "Reserve a bay, then start a session with matching reservationId"
+description: "Reserve a bay via CSMS API, then start a session with matching reservationId"
 station_count: 1
-timeout_seconds: 60
+timeout_seconds: 45
 tags: [reservation, session]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
 
 steps:
   - name: "Send BootNotification"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
-      bootReason: "power_on"
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
 
   - name: "Wait for boot accepted"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 5000
+    timeout_ms: 25000
 
-  - name: "Wait for StatusNotification"
-    type: wait_for
-    action: StatusNotification
-    message_type: EVENT
-    timeout_ms: 3000
+  - name: "Wait for boot to complete and bays to report"
+    type: delay
+    duration_ms: 2000
+
+  - name: "Reserve bay via CSMS API"
+    type: api_call
+    method: POST
+    path: "/api/v1/reservations"
+    body:
+      bay_id: "{{bayId_1}}"
+      duration_minutes: 5
+      session_source: "MobileApp"
+    expect_status: 201
+    capture:
+      reservation_id: "data.id"
 
   - name: "Wait for ReserveBay command"
     type: wait_for
     action: ReserveBay
     message_type: REQUEST
-    timeout_ms: 30000
+    timeout_ms: 25000
+
+  - name: "Wait for handler to process"
+    type: delay
+    duration_ms: 500
 
   - name: "Assert bay reserved"
     type: assert
@@ -43,17 +74,28 @@ steps:
       bay_number: 1
       expected: "Reserved"
 
-  - name: "Assert reservation response accepted"
-    type: assert
-    assertion: response_status
-    params:
-      expected: "Accepted"
+  - name: "Start service with reservation via CSMS API"
+    type: api_call
+    method: POST
+    path: "/api/v1/sessions/start"
+    body:
+      bay_id: "{{bayId_1}}"
+      service_id: "{{serviceId_1}}"
+      duration_seconds: 300
+      reservation_id: "{{captured.reservation_id}}"
+    expect_status: 201
+    capture:
+      session_id: "data.id"
 
-  - name: "Wait for StartService with reservation"
+  - name: "Wait for StartService command"
     type: wait_for
     action: StartService
     message_type: REQUEST
-    timeout_ms: 30000
+    timeout_ms: 25000
+
+  - name: "Wait for handler to process"
+    type: delay
+    duration_ms: 500
 
   - name: "Assert bay occupied"
     type: assert

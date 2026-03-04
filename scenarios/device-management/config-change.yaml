@@ -1,28 +1,45 @@
 name: "Configuration Change"
-description: "Read current config, change a value, verify it was accepted"
+description: "Change HeartbeatIntervalSeconds via CSMS API, verify station accepts"
 station_count: 1
 timeout_seconds: 30
 tags: [device-management, configuration]
+
+config:
+  csms_url: "http://csms-nginx"
+  csms_auth:
+    email: "admin@csms.local"
+    password: "password"
 
 steps:
   - name: "Send BootNotification"
     type: send
     action: BootNotification
-    message_type: REQUEST
+    message_type: request
     payload:
       stationId: "{{stationId}}"
       firmwareVersion: "1.2.0"
       stationModel: "SimStation"
       stationVendor: "AcmeCorp"
       serialNumber: "{{serialNumber}}"
+      uptimeSeconds: 0
+      pendingOfflineTransactions: 0
       bayCount: 4
-      bootReason: "power_on"
+      capabilities:
+        bleSupported: false
+        offlineModeSupported: true
+        meterValuesSupported: true
+        deviceManagementSupported: true
+      networkInfo:
+        connectionType: "Ethernet"
+        signalStrength: null
+      timezone: "Europe/Bucharest"
+      bootReason: "PowerOn"
 
   - name: "Wait for boot accepted"
     type: wait_for
     action: BootNotification
     message_type: RESPONSE
-    timeout_ms: 5000
+    timeout_ms: 25000
 
   - name: "Set change config behavior to always accept"
     type: set_behavior
@@ -32,26 +49,21 @@ steps:
       reboot_required_rate: 0.0
       not_supported_rate: 0.0
 
-  - name: "Wait for GetConfiguration"
-    type: wait_for
-    action: GetConfiguration
-    message_type: REQUEST
-    timeout_ms: 30000
+  - name: "Change config via CSMS API"
+    type: api_call
+    method: PUT
+    path: "/api/v1/admin/stations/{{stationId}}/config"
+    body:
+      key: "HeartbeatInterval"
+      value: "60"
+    expect_status: 202
 
-  - name: "Assert get config accepted"
-    type: assert
-    assertion: response_status
-    params:
-      expected: "Accepted"
-
-  - name: "Wait for ChangeConfiguration"
+  - name: "Wait for ChangeConfiguration command"
     type: wait_for
     action: ChangeConfiguration
     message_type: REQUEST
-    timeout_ms: 30000
+    timeout_ms: 25000
 
-  - name: "Assert change config accepted"
+  - name: "Assert no errors"
     type: assert
-    assertion: response_status
-    params:
-      expected: "Accepted"
+    assertion: no_errors

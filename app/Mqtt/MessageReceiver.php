@@ -29,6 +29,9 @@ final class MessageReceiver
     /** @var callable|null */
     private $commandRouter = null;
 
+    /** @var callable|null Called with (MessageEnvelope) for each received message */
+    private $onMessageCallback = null;
+
     public function __construct(
         private readonly MessageLogger $logger,
         private readonly ColoredConsoleOutput $output,
@@ -47,12 +50,15 @@ final class MessageReceiver
         $this->commandRouter = $router;
     }
 
+    public function setOnMessageCallback(callable $callback): void
+    {
+        $this->onMessageCallback = $callback;
+    }
+
     public function handleMessage(string $stationId, string $rawJson): void
     {
         $station = $this->stations[$stationId] ?? null;
         if ($station === null) {
-            $this->output->warning("Received message for unknown station: {$stationId}");
-
             return;
         }
 
@@ -83,8 +89,10 @@ final class MessageReceiver
 
         // Optional HMAC verification
         if ($envelope->isSigned() && $station->state->sessionKey !== null) {
+            $envelopeArray = $envelope->toArray();
+            unset($envelopeArray['mac']);
             $valid = $this->macSigner->verify(
-                $envelope->payload,
+                $envelopeArray,
                 $envelope->mac,
                 $station->state->sessionKey,
             );
@@ -94,6 +102,11 @@ final class MessageReceiver
         }
 
         $this->logger->logInbound($stationId, $envelope);
+
+        // Notify scenario context (if wired)
+        if ($this->onMessageCallback !== null) {
+            ($this->onMessageCallback)($envelope);
+        }
 
         $station->emit('message.received', [
             'action' => $envelope->action,
@@ -116,8 +129,8 @@ final class MessageReceiver
                 messageType: MessageType::from($data['messageType'] ?? ''),
                 action: $data['action'] ?? '',
                 timestamp: new \DateTimeImmutable($data['timestamp'] ?? 'now'),
-                source: $data['source'] ?? 'csms',
-                protocolVersion: ProtocolVersion::fromString($data['protocolVersion'] ?? '1.0.0'),
+                source: $data['source'] ?? 'Server',
+                protocolVersion: ProtocolVersion::fromString($data['protocolVersion'] ?? '0.1.0'),
                 payload: $data['payload'] ?? [],
                 mac: $data['mac'] ?? null,
             );
