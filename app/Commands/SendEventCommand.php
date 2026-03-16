@@ -16,7 +16,7 @@ final class SendEventCommand extends Command
     use BootstrapsMqtt;
 
     protected $signature = 'send-event
-        {type : Event type: StatusNotification, SecurityEvent, DiagnosticsNotification, FirmwareStatusNotification}
+        {type : Event type: StatusNotification, SecurityEvent, DiagnosticsNotification, FirmwareStatusNotification, DataTransfer, AuthorizeOfflinePass, ConnectionLost}
         {--mqtt-host= : MQTT broker host}
         {--mqtt-port= : MQTT broker port}
         {--config= : Station config file name}
@@ -30,6 +30,9 @@ final class SendEventCommand extends Command
         'SecurityEvent' => OsppAction::SECURITY_EVENT,
         'DiagnosticsNotification' => OsppAction::DIAGNOSTICS_NOTIFICATION,
         'FirmwareStatusNotification' => OsppAction::FIRMWARE_STATUS_NOTIFICATION,
+        'DataTransfer' => OsppAction::DATA_TRANSFER,
+        'AuthorizeOfflinePass' => OsppAction::AUTHORIZE_OFFLINE_PASS,
+        'ConnectionLost' => OsppAction::CONNECTION_LOST,
     ];
 
     public function handle(): int
@@ -101,7 +104,9 @@ final class SendEventCommand extends Command
         string $type,
     ): void {
         $sender = $orchestrator->getSender();
-        $bayId = $this->option('bay-id') ?? 'bay_1';
+        $bays = $station->getBays();
+        $firstBay = reset($bays);
+        $bayId = $this->option('bay-id') ?? ($firstBay ? $firstBay->bayId : 'bay_00000001');
 
         match ($type) {
             'StatusNotification' => $this->sendStatusNotification($station, $sender, $bayId),
@@ -110,20 +115,74 @@ final class SendEventCommand extends Command
                 'type' => 'HardwareFault',
                 'severity' => 'Info',
                 'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
-                'details' => ['source' => 'ManualTrigger', 'stationId' => $station->getStationId()],
+                'details' => (object) ['source' => 'ManualTrigger', 'stationId' => $station->getStationId()],
             ]),
             'DiagnosticsNotification' => $sender->sendEvent($station, OsppAction::DIAGNOSTICS_NOTIFICATION, [
-                'stationId' => $station->getStationId(),
                 'status' => 'Uploaded',
-                'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
+                'fileName' => "diag_{$station->getStationId()}_" . date('Ymd_His') . '.tar.gz',
             ]),
             'FirmwareStatusNotification' => $sender->sendEvent($station, OsppAction::FIRMWARE_STATUS_NOTIFICATION, [
-                'stationId' => $station->getStationId(),
                 'status' => 'Installed',
-                'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
+                'firmwareVersion' => $station->identity->firmwareVersion,
+            ]),
+            'DataTransfer' => $sender->sendRequest($station, OsppAction::DATA_TRANSFER, [
+                'vendorId' => $station->identity->vendor,
+                'dataId' => 'diagnostics.summary',
+                'data' => (object) ['stationId' => $station->getStationId(), 'uptime' => random_int(3600, 86400)],
+            ]),
+            'AuthorizeOfflinePass' => $this->sendAuthorizeOfflinePass($station, $sender, $bayId),
+            'ConnectionLost' => $sender->sendEvent($station, OsppAction::CONNECTION_LOST, [
+                'stationId' => $station->getStationId(),
+                'reason' => 'UnexpectedDisconnect',
             ]),
             default => null,
         };
+    }
+
+    private function sendAuthorizeOfflinePass(
+        \App\Station\SimulatedStation $station,
+        \App\Mqtt\MessageSender $sender,
+        string $bayId,
+    ): void {
+        $bay = $station->getBay($bayId);
+        $serviceId = 'svc_wash_basic';
+        if ($bay !== null && ! empty($bay->services)) {
+            $svc = $bay->services[0];
+            $serviceId = $svc['service_id'] ?? $svc['serviceId'] ?? $serviceId;
+        }
+
+        $passId = 'opass_' . bin2hex(random_bytes(8));
+        $now = new \DateTimeImmutable();
+
+        $sender->sendRequest($station, OsppAction::AUTHORIZE_OFFLINE_PASS, [
+            'offlinePassId' => $passId,
+            'offlinePass' => [
+                'passId' => $passId,
+                'sub' => 'sub_' . bin2hex(random_bytes(6)),
+                'deviceId' => 'dev_' . bin2hex(random_bytes(6)),
+                'issuedAt' => $now->format('Y-m-d\TH:i:s.v\Z'),
+                'expiresAt' => $now->modify('+24 hours')->format('Y-m-d\TH:i:s.v\Z'),
+                'policyVersion' => 1,
+                'revocationEpoch' => 0,
+                'offlineAllowance' => [
+                    'maxTotalCredits' => 500,
+                    'maxUses' => 5,
+                    'maxCreditsPerTx' => 100,
+                    'allowedServiceTypes' => [$serviceId],
+                ],
+                'constraints' => [
+                    'minIntervalSec' => 60,
+                    'stationOfflineWindowHours' => 24,
+                    'stationMaxOfflineTx' => 10,
+                ],
+                'signatureAlgorithm' => 'ECDSA-P256-SHA256',
+                'signature' => base64_encode(random_bytes(64)),
+            ],
+            'deviceId' => 'dev_' . bin2hex(random_bytes(6)),
+            'counter' => 1,
+            'bayId' => $bay?->bayId ?? $bayId,
+            'serviceId' => $serviceId,
+        ]);
     }
 
     private function sendStatusNotification(

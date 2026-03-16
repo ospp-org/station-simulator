@@ -54,9 +54,8 @@ final class GetConfigurationHandler
             }
 
             $this->sender->sendResponse($station, OsppAction::GET_CONFIGURATION, [
-                'status' => 'Accepted',
-                'configuration' => $known,
-                'unknownKeys' => $unknown,
+                'configuration' => array_values($known),
+                'unknownKeys' => array_values($unknown),
             ], $envelope);
         });
     }

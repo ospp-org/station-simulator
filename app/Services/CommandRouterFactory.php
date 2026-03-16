@@ -149,6 +149,14 @@ final class CommandRouterFactory
             }
         });
 
+        // Handle SignCertificate response from CSMS
+        $router->registerHandler(OsppAction::SIGN_CERTIFICATE, function (SimulatedStation $station, $envelope) use ($output): void {
+            if ($envelope->messageType === MessageType::RESPONSE) {
+                $status = $envelope->payload['status'] ?? 'Unknown';
+                $output->info("SignCertificate response for {$station->getStationId()}: {$status}");
+            }
+        });
+
         return $router;
     }
 }

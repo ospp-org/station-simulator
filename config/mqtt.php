@@ -10,6 +10,8 @@ return [
     'connection_mode' => env('MQTT_CONNECTION_MODE', 'shared'), // shared|per_station
     'qos' => (int) env('MQTT_QOS', 1),
     'keep_alive' => (int) env('MQTT_KEEP_ALIVE', 60),
+    'username' => env('MQTT_USERNAME', ''),
+    'password' => env('MQTT_PASSWORD', ''),
     'reconnect' => [
         'initial_delay_ms' => 1000,
         'max_delay_ms' => 30000,

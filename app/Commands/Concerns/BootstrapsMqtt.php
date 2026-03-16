@@ -22,6 +22,15 @@ trait BootstrapsMqtt
             output: $output,
             mqttHost: $mqttHost,
             mqttPort: $mqttPort,
+            tlsEnabled: (bool) config('mqtt.tls_enabled', false),
+            clientIdPrefix: (string) config('mqtt.client_id_prefix', 'sim'),
+            connectionMode: (string) config('mqtt.connection_mode', 'shared'),
+            qos: (int) config('mqtt.qos', 1),
+            keepAlive: (int) config('mqtt.keep_alive', 60),
+            username: (string) config('mqtt.username', ''),
+            password: (string) config('mqtt.password', ''),
+            pollIntervalMs: (int) config('simulator.mqtt_poll_interval_ms', 50),
+            reconnectConfig: config('mqtt.reconnect', []),
         );
     }
 

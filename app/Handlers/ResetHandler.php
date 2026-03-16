@@ -81,11 +81,13 @@ final class ResetHandler
             foreach ($station->getBays() as $bay) {
                 $bay->transitionTo(BayStatus::UNAVAILABLE);
                 $this->sender->sendEvent($station, OsppAction::STATUS_NOTIFICATION, [
-                    'stationId' => $station->getStationId(),
                     'bayId' => $bay->bayId,
                     'bayNumber' => $bay->bayNumber,
                     'status' => BayStatus::UNAVAILABLE->toOspp(),
-                    'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
+                    'services' => array_map(fn (array $svc) => [
+                        'serviceId' => $svc['service_id'] ?? $svc['serviceId'] ?? '',
+                        'available' => $svc['available'] ?? true,
+                    ], $bay->services),
                 ]);
             }
 

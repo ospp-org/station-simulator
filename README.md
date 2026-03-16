@@ -79,6 +79,29 @@ Station behavior is defined in `config/stations/default.yaml`:
 - **meter_values** — consumption profiles per service type
 - **offline** — ECDSA signing, pass constraints
 
+## Known Limitations
+
+### MQTT Protocol Version
+
+The simulator uses `php-mqtt/client` which supports MQTT 3.1.1 only.
+OSPP spec requires MQTT 5.0. The following MQTT 5.0 features are NOT available:
+
+- **Will Delay Interval** — LWT is published immediately on disconnect detection, not after 10s grace period
+- **Session Expiry Interval** — uses broker default
+- **Message Expiry Interval** — not supported
+- **Reason Codes** — basic CONNACK only
+- **Shared Subscriptions** — server-side, does not affect simulator
+
+This does NOT affect protocol conformance testing — all 26 OSPP actions are fully supported. The limitation is transport-level only.
+
+No PHP MQTT 5.0 library with ReactPHP support currently exists. Migration to MQTT 5.0 requires either Swoole (simps/mqtt) or a different language runtime.
+
+### LWT (Last Will and Testament)
+
+LWT is configured at CONNECT time but triggers only on actual network failure (TCP connection loss without DISCONNECT packet). `kill -9` on Linux sends TCP FIN which the broker interprets as clean disconnect — LWT is NOT published.
+
+To test LWT, use `php simulator send-event ConnectionLost` or simulate network failure with `iptables -A OUTPUT -d <broker_ip> -j DROP`.
+
 ## License
 
 [MIT](LICENSE)

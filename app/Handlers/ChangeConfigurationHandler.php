@@ -58,7 +58,6 @@ final class ChangeConfigurationHandler
             ], $keys);
 
             $this->sender->sendResponse($station, OsppAction::CHANGE_CONFIGURATION, [
-                'status' => $status,
                 'results' => $results,
             ], $envelope);
 

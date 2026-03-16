@@ -44,6 +44,8 @@ final class SimulatorOrchestrator
         string $connectionMode = 'shared',
         int $qos = 1,
         int $keepAlive = 60,
+        string $username = '',
+        string $password = '',
         int $pollIntervalMs = 50,
         ?array $reconnectConfig = null,
         string $protocolVersion = '0.1.0',
@@ -64,6 +66,8 @@ final class SimulatorOrchestrator
             connectionMode: $connectionMode,
             qos: $qos,
             keepAlive: $keepAlive,
+            username: $username,
+            password: $password,
         );
 
         $this->sender = new MessageSender($this->mqtt, $this->messageLogger);

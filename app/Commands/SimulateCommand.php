@@ -76,6 +76,8 @@ final class SimulateCommand extends Command
             connectionMode: config('mqtt.connection_mode', 'shared'),
             qos: (int) config('mqtt.qos', 1),
             keepAlive: (int) config('mqtt.keep_alive', 60),
+            username: (string) config('mqtt.username', ''),
+            password: (string) config('mqtt.password', ''),
             pollIntervalMs: (int) config('simulator.mqtt_poll_interval_ms', 50),
             reconnectConfig: config('mqtt.reconnect', []),
         );

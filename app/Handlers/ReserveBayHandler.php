@@ -105,10 +105,13 @@ final class ReserveBayHandler
 
                         // Send StatusNotification for bay returning to Available
                         $this->sender->sendEvent($station, OsppAction::STATUS_NOTIFICATION, [
-                            'stationId' => $station->getStationId(),
-                            'bayId' => $bayId,
+                            'bayId' => $bay->bayId,
+                            'bayNumber' => $bay->bayNumber,
                             'status' => BayStatus::AVAILABLE->toOspp(),
-                            'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
+                            'services' => array_map(fn (array $svc) => [
+                                'serviceId' => $svc['service_id'] ?? $svc['serviceId'] ?? '',
+                                'available' => $svc['available'] ?? true,
+                            ], $bay->services),
                         ]);
                     }
                 },

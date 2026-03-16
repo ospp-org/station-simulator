@@ -30,6 +30,8 @@ final class MqttConnectionManager
         private readonly string $connectionMode,
         private readonly int $qos,
         private readonly int $keepAlive,
+        private readonly string $username = '',
+        private readonly string $password = '',
     ) {}
 
     /** @param array<string, SimulatedStation> $stations */
@@ -185,7 +187,7 @@ final class MqttConnectionManager
             ->setConnectTimeout(5);
 
         if ($stationId !== null) {
-            $lwtTopic = "ospp/v1/stations/{$stationId}/connection-lost";
+            $lwtTopic = "ospp/v1/stations/{$stationId}/to-server";
             $lwtPayload = json_encode([
                 'stationId' => $stationId,
                 'reason' => 'UnexpectedDisconnect',
@@ -197,8 +199,16 @@ final class MqttConnectionManager
                 ->setLastWillQualityOfService($this->qos);
         }
 
+        if ($this->username !== '') {
+            $settings = $settings
+                ->setUsername($this->username)
+                ->setPassword($this->password);
+        }
+
         if ($this->tlsEnabled) {
-            $settings = $settings->setUseTls(true);
+            $settings = $settings
+                ->setUseTls(true)
+                ->setTlsCertificateAuthorityPath('/etc/ssl/certs');
         }
 
         return $settings;

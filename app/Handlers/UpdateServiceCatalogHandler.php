@@ -53,18 +53,18 @@ final class UpdateServiceCatalogHandler
 
             $this->sender->sendResponse($station, OsppAction::UPDATE_SERVICE_CATALOG, [
                 'status' => 'Accepted',
-                'servicesUpdated' => count($services),
             ], $envelope);
 
             // Send StatusNotification per bay to reflect service changes
             foreach ($station->getBays() as $bay) {
                 $this->sender->sendEvent($station, OsppAction::STATUS_NOTIFICATION, [
-                    'stationId' => $station->getStationId(),
                     'bayId' => $bay->bayId,
                     'bayNumber' => $bay->bayNumber,
                     'status' => $bay->status->toOspp(),
-                    'services' => $services,
-                    'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
+                    'services' => array_map(fn (array $svc) => [
+                        'serviceId' => $svc['service_id'] ?? $svc['serviceId'] ?? '',
+                        'available' => $svc['available'] ?? true,
+                    ], $bay->services),
                 ]);
             }
 

@@ -72,11 +72,8 @@ final class SimulatedDiagnosticsFSM
                 $this->transitionAndNotify($station, DiagnosticsStatus::UPLOADED);
 
                 $this->sender->sendEvent($station, OsppAction::DIAGNOSTICS_NOTIFICATION, [
-                    'stationId' => $station->getStationId(),
                     'status' => 'Uploaded',
-                    'uploadUrl' => $uploadUrl,
                     'fileName' => "diag_{$station->getStationId()}_" . date('Ymd_His') . '.tar.gz',
-                    'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
                 ]);
             });
         });
@@ -97,9 +94,7 @@ final class SimulatedDiagnosticsFSM
         $this->output->diag("Station {$stationId}: diagnostics {$current->value} → {$newStatus->value}");
 
         $this->sender->sendEvent($station, OsppAction::DIAGNOSTICS_NOTIFICATION, [
-            'stationId' => $stationId,
             'status' => ucfirst($newStatus->value),
-            'timestamp' => (new \DateTimeImmutable())->format('Y-m-d\TH:i:s.v\Z'),
         ]);
     }
 

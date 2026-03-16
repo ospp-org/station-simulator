@@ -101,8 +101,9 @@ final class StopServiceHandler
             // Transition to STOPPING then COMPLETED
             $this->sessionFSM->transition($bayId, SessionStatus::STOPPING);
 
-            // Transition bay to Finishing
+            // Transition bay to Finishing + notify CSMS
             $this->bayFSM->transition($station, $bay, BayStatus::FINISHING);
+            $this->statusService->sendForBay($station, $bay);
 
             $meterPayload = $this->meterGenerator->buildPayload($bay, $station->getStationId());
 
@@ -111,6 +112,8 @@ final class StopServiceHandler
             // Send accept response
             $this->sender->sendResponse($station, OsppAction::STOP_SERVICE, [
                 'status' => 'Accepted',
+                'actualDurationSeconds' => $durationSeconds,
+                'creditsCharged' => $creditsCharged,
             ], $envelope);
 
             // Send TransactionEvent with session summary
