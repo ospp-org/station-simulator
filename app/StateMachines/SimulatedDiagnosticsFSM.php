@@ -69,17 +69,14 @@ final class SimulatedDiagnosticsFSM
                 }
 
                 // UPLOADING → UPLOADED
-                $this->transitionAndNotify($station, DiagnosticsStatus::UPLOADED);
-
-                $this->sender->sendEvent($station, OsppAction::DIAGNOSTICS_NOTIFICATION, [
-                    'status' => 'Uploaded',
-                    'fileName' => "diag_{$station->getStationId()}_" . date('Ymd_His') . '.tar.gz',
-                ]);
+                $fileName = "diag_{$station->getStationId()}_" . date('Ymd_His') . '.tar.gz';
+                $this->transitionAndNotify($station, DiagnosticsStatus::UPLOADED, ['fileName' => $fileName]);
             });
         });
     }
 
-    private function transitionAndNotify(SimulatedStation $station, DiagnosticsStatus $newStatus): void
+    /** @param array<string, mixed> $extraFields */
+    private function transitionAndNotify(SimulatedStation $station, DiagnosticsStatus $newStatus, array $extraFields = []): void
     {
         $stationId = $station->getStationId();
         $current = $this->getStatus($stationId);
@@ -93,9 +90,10 @@ final class SimulatedDiagnosticsFSM
         $this->states[$stationId] = $newStatus;
         $this->output->diag("Station {$stationId}: diagnostics {$current->value} → {$newStatus->value}");
 
-        $this->sender->sendEvent($station, OsppAction::DIAGNOSTICS_NOTIFICATION, [
-            'status' => ucfirst($newStatus->value),
-        ]);
+        $this->sender->sendEvent($station, OsppAction::DIAGNOSTICS_NOTIFICATION, array_merge(
+            ['status' => ucfirst($newStatus->value)],
+            $extraFields,
+        ));
     }
 
     private function shouldFail(float $failureRate): bool

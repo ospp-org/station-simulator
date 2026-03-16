@@ -16,7 +16,7 @@ final class SendEventCommand extends Command
     use BootstrapsMqtt;
 
     protected $signature = 'send-event
-        {type : Event type: StatusNotification, SecurityEvent, DiagnosticsNotification, FirmwareStatusNotification, DataTransfer, AuthorizeOfflinePass, ConnectionLost}
+        {type : Event type: StatusNotification, SecurityEvent, DiagnosticsNotification, FirmwareStatusNotification, DataTransfer, AuthorizeOfflinePass, ConnectionLost, TransactionEvent}
         {--mqtt-host= : MQTT broker host}
         {--mqtt-port= : MQTT broker port}
         {--config= : Station config file name}
@@ -33,6 +33,7 @@ final class SendEventCommand extends Command
         'DataTransfer' => OsppAction::DATA_TRANSFER,
         'AuthorizeOfflinePass' => OsppAction::AUTHORIZE_OFFLINE_PASS,
         'ConnectionLost' => OsppAction::CONNECTION_LOST,
+        'TransactionEvent' => OsppAction::TRANSACTION_EVENT,
     ];
 
     public function handle(): int
@@ -135,8 +136,49 @@ final class SendEventCommand extends Command
                 'stationId' => $station->getStationId(),
                 'reason' => 'UnexpectedDisconnect',
             ]),
+            'TransactionEvent' => $this->sendTransactionEvent($station, $sender, $bayId),
             default => null,
         };
+    }
+
+    private function sendTransactionEvent(
+        \App\Station\SimulatedStation $station,
+        \App\Mqtt\MessageSender $sender,
+        string $bayId,
+    ): void {
+        $bay = $station->getBay($bayId);
+        $serviceId = 'svc_wash_basic';
+        if ($bay !== null && ! empty($bay->services)) {
+            $svc = $bay->services[0];
+            $serviceId = $svc['service_id'] ?? $svc['serviceId'] ?? $serviceId;
+        }
+
+        $now = new \DateTimeImmutable();
+        $durationSeconds = random_int(60, 600);
+        $startedAt = $now->modify("-{$durationSeconds} seconds");
+        $receiptData = base64_encode(json_encode([
+            'txId' => 'otx_' . bin2hex(random_bytes(8)),
+            'amount' => 50,
+            'ts' => $now->format('Y-m-d\TH:i:s.v\Z'),
+        ]));
+
+        $sender->sendRequest($station, OsppAction::TRANSACTION_EVENT, [
+            'offlineTxId' => 'otx_' . bin2hex(random_bytes(8)),
+            'offlinePassId' => 'opass_' . bin2hex(random_bytes(8)),
+            'userId' => 'sub_' . bin2hex(random_bytes(6)),
+            'bayId' => $bay?->bayId ?? $bayId,
+            'serviceId' => $serviceId,
+            'startedAt' => $startedAt->format('Y-m-d\TH:i:s.v\Z'),
+            'endedAt' => $now->format('Y-m-d\TH:i:s.v\Z'),
+            'durationSeconds' => $durationSeconds,
+            'creditsCharged' => random_int(20, 100),
+            'receipt' => [
+                'data' => $receiptData,
+                'signature' => base64_encode(random_bytes(64)),
+                'signatureAlgorithm' => 'ECDSA-P256-SHA256',
+            ],
+            'txCounter' => 1,
+        ]);
     }
 
     private function sendAuthorizeOfflinePass(
